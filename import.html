@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Import CSV to Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+  <h2>Import CSV to Supabase (Table: databarang)</h2>
+
+  <input type="file" id="csvFile" accept=".csv" />
+  <button onclick="uploadCSV()">Upload CSV</button>
+
+  <div id="status"></div>
+
+  <script>
+    // GANTI dengan kredensial Supabase kamu
+    const SUPABASE_URL = 'https://xxxxx.supabase.co';
+    const SUPABASE_KEY = 'your-anon-key-or-service-role-key';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function uploadCSV() {
+      const fileInput = document.getElementById('csvFile');
+      const file = fileInput.files[0];
+      if (!file) return alert("Pilih file CSV terlebih dahulu.");
+
+      document.getElementById('status').innerText = "Membaca dan mengunggah...";
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: async function(results) {
+          const data = results.data;
+
+          // Format timestamp jika perlu
+          const formattedData = data.map(row => ({
+            packaging_board: row.packaging_board || null,
+            box_number: row.box_number || null,
+            material_order_number: row.material_order_number || null,
+            original_material_order_number: row.original_material_order_number || null,
+            company_number: row.company_number || null,
+            packaging_quantity: row.packaging_quantity ? parseInt(row.packaging_quantity) : null,
+            customer: row.customer || null,
+            customer_order_number: row.customer_order_number || null,
+            delivery_order_number: row.delivery_order_number || null,
+            packaging_time: row.packaging_time ? new Date(row.packaging_time).toISOString() : null,
+            packer: row.packer || null
+          }));
+
+          // Insert data ke Supabase
+          let success = 0;
+          let failed = 0;
+
+          for (let item of formattedData) {
+            const { error } = await supabase.from('databarang').insert(item);
+            if (error) {
+              console.error("Error inserting:", item, error);
+              failed++;
+            } else {
+              success++;
+            }
+          }
+
+          document.getElementById('status').innerText =
+            `Upload selesai. Berhasil: ${success}, Gagal: ${failed}`;
+        },
+        error: function(err) {
+          console.error("CSV parsing error:", err);
+          document.getElementById('status').innerText = "Gagal membaca CSV.";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
