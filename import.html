@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
   <title>Import CSV to Supabase</title>
@@ -7,67 +7,72 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 </head>
 <body>
-  <h2>Import CSV to Supabase (Table: databarang)</h2>
-
-  <input type="file" id="csvFile" accept=".csv" />
-  <button onclick="uploadCSV()">Upload CSV</button>
-
-  <div id="status"></div>
+  <h2>📦 匯入 CSV 至資料庫</h2>
+  <input type="file" id="csvFile" accept=".csv">
+  <button onclick="handleUpload()">📤 上傳並匯入</button>
 
   <script>
-    // GANTI dengan kredensial Supabase kamu
-    const SUPABASE_URL = 'https://xxxxx.supabase.co';
-    const SUPABASE_KEY = 'your-anon-key-or-service-role-key';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Ganti dengan URL dan API KEY kamu
+    const supabaseUrl = 'https://xxxxx.supabase.co';
+    const supabaseKey = 'YOUR_SUPABASE_API_KEY';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function uploadCSV() {
+    async function handleUpload() {
       const fileInput = document.getElementById('csvFile');
       const file = fileInput.files[0];
-      if (!file) return alert("Pilih file CSV terlebih dahulu.");
 
-      document.getElementById('status').innerText = "Membaca dan mengunggah...";
+      if (!file) {
+        alert('請選擇一個CSV檔案');
+        return;
+      }
 
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: async function(results) {
-          const data = results.data;
+          const rows = results.data;
+          console.log('📄 解析筆數:', rows.length);
 
-          // Format timestamp jika perlu
-          const formattedData = data.map(row => ({
-            packaging_board: row.packaging_board || null,
-            box_number: row.box_number || null,
-            material_order_number: row.material_order_number || null,
-            original_material_order_number: row.original_material_order_number || null,
-            company_number: row.company_number || null,
-            packaging_quantity: row.packaging_quantity ? parseInt(row.packaging_quantity) : null,
-            customer: row.customer || null,
-            customer_order_number: row.customer_order_number || null,
-            delivery_order_number: row.delivery_order_number || null,
-            packaging_time: row.packaging_time ? new Date(row.packaging_time).toISOString() : null,
-            packer: row.packer || null
-          }));
+          // Validasi kolom wajib
+          const requiredCols = [
+            '包裝機板', '箱號', '備料單號', '原始備料單號',
+            '公司號', '包裝數量', '客戶', '客戶訂單號',
+            '送貨訂單號', '打包時間', '打包人員'
+          ];
 
-          // Insert data ke Supabase
-          let success = 0;
-          let failed = 0;
+          const invalidCols = requiredCols.filter(col => !(col in rows[0]));
+          if (invalidCols.length > 0) {
+            alert('CSV 欄位錯誤或缺失：' + invalidCols.join(', '));
+            return;
+          }
 
-          for (let item of formattedData) {
-            const { error } = await supabase.from('databarang').insert(item);
+          // Mapping dan insert satu per satu
+          for (const row of rows) {
+            const { error } = await supabase
+              .from('databarang')
+              .insert([{
+                packaging_board: row['包裝機板'],
+                box_number: row['箱號'],
+                material_order_number: row['備料單號'],
+                original_material_order_number: row['原始備料單號'],
+                company_number: row['公司號'],
+                packaging_quantity: parseInt(row['包裝數量']) || 0,
+                customer: row['客戶'],
+                customer_order_number: row['客戶訂單號'],
+                delivery_order_number: row['送貨訂單號'],
+                packaging_time: row['打包時間'] ? new Date(row['打包時間']).toISOString() : null,
+                packer: row['打包人員']
+              }]);
+
             if (error) {
-              console.error("Error inserting:", item, error);
-              failed++;
-            } else {
-              success++;
+              console.error('❌ Gagal simpan:', error);
+              alert('發生錯誤: ' + error.message);
+              return;
             }
           }
 
-          document.getElementById('status').innerText =
-            `Upload selesai. Berhasil: ${success}, Gagal: ${failed}`;
-        },
-        error: function(err) {
-          console.error("CSV parsing error:", err);
-          document.getElementById('status').innerText = "Gagal membaca CSV.";
+          alert('✅ 匯入成功，共 ' + rows.length + ' 筆資料');
+          fileInput.value = '';
         }
       });
     }
