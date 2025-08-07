@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>计时器</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background-color: #f9f9f9;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+      padding: 20px;
+    }
+
+    .left {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #222;
+      color: #fff;
+      font-size: 60px;
+      font-weight: bold;
+      border-radius: 10px;
+    }
+
+    label {
+      margin: 10px 0 5px;
+      font-weight: 600;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      width: 100%;
+    }
+
+    button {
+      padding: 12px;
+      font-size: 18px;
+      background-color: #007bff;
+      border: none;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+   #overtimeAlert {
+  display: none;
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #ff4d4d;
+  color: white; 
+  font-size: 2.5em; /* Sedikit lebih kecil */
+  font-weight: bold;
+  width: 500px;       /* Lebar tetap */
+  max-width: 90%;     /* Responsive di layar kecil */
+  padding: 30px 30px; /* Lebih ramping */
+  text-align: center;
+  border-radius: 10px;
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+  z-index: 9999;
+  animation: fadeInScale 0.4s ease-in-out;
+}
+
+
+    @keyframes fadeInScale {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="left">
+    <h3>工作计时器</h3>
+    <label for="worker">👷‍♀️ 员工姓名:</label>
+    <input type="text" id="worker" placeholder="请输入员工姓名" />
+
+    <label for="item">📦 商品名称:</label>
+    <input type="text" id="item" placeholder="请输入商品名称" />
+
+    <label for="duration">⏱️ 工作时长（分钟）:</label>
+    <input type="number" id="duration" placeholder="例如：30" />
+
+    <div style="margin-top: 15px;">
+      <button onclick="startTimer()">开始</button>
+      <button onclick="stopTimer()">停止</button>
+    </div>
+  </div>
+  <div class="right">
+    <div id="timer">00:00</div>
+  </div>
+</div>
+
+<div id="overtimeAlert">⛔ 时间已超出！</div>
+
+<script>
+  const SUPABASE_URL = 'https://your-project.supabase.co';
+  const SUPABASE_API_KEY = 'your-anon-key';
+  const TABLE_NAME = 'work_timer';
+
+  let timerInterval;
+  let startTime;
+  let durationInput;
+  let overtimeStarted = false;
+
+  function formatTime(seconds) {
+    const mins = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secs = String(seconds % 60).padStart(2, '0');
+    return `${mins}:${secs}`;
+  }
+
+  function startTimer() {
+    const worker = document.getElementById('worker').value.trim();
+    const item = document.getElementById('item').value.trim();
+    durationInput = parseInt(document.getElementById('duration').value.trim());
+
+    if (!worker || !item || isNaN(durationInput) || durationInput <= 0) {
+      alert('请填写所有字段并输入有效的时长');
+      return;
+    }
+
+    startTime = new Date();
+    let seconds = 0;
+    overtimeStarted = false;
+    document.getElementById('overtimeAlert').style.display = 'none';
+
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      seconds++;
+      document.getElementById('timer').textContent = formatTime(seconds);
+
+      if (seconds >= durationInput * 60) {
+        if (!overtimeStarted) {
+          overtimeStarted = true;
+          showOvertimeAlert();
+          saveData(worker, item, durationInput, "超时");
+        }
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    const endTime = new Date();
+    const worker = document.getElementById('worker').value.trim();
+    const item = document.getElementById('item').value.trim();
+    if (worker && item && startTime) {
+      saveData(worker, item, durationInput, "完成");
+    }
+  }
+
+  function showOvertimeAlert() {
+    const alertBox = document.getElementById("overtimeAlert");
+    alertBox.style.display = "block";
+    setTimeout(() => {
+      alertBox.style.display = "none";
+    }, 30000);
+  }
+
+  async function saveData(worker, item, duration, status) {
+    const endTime = new Date();
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_API_KEY,
+        "Authorization": `Bearer ${SUPABASE_API_KEY}`,
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
+        worker_name: worker,
+        item_name: item,
+        duration_minutes: duration,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: status
+      })
+    });
+
+    if (response.ok) {
+      console.log("数据已保存");
+    } else {
+      console.error("保存失败:", await response.text());
+    }
+  }
+</script>
+</body>
+</html>
