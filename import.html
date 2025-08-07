@@ -2,79 +2,83 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Import CSV to Supabase</title>
+  <title>匯入 Excel 至 Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 </head>
 <body>
-  <h2>📦 匯入 CSV 至資料庫</h2>
-  <input type="file" id="csvFile" accept=".csv">
-  <button onclick="handleUpload()">📤 上傳並匯入</button>
+  <h2>📥 上傳 Excel 檔案 (.xlsx)</h2>
+  <input type="file" id="excelFile" accept=".xlsx">
+  <button onclick="handleExcelUpload()">上傳並匯入</button>
 
   <script>
-    // Ganti dengan URL dan API KEY kamu
-    const supabaseUrl = 'https://uusljhegkvahcjkaxqkz.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+    // GANTI dengan Supabase URL dan API KEY kamu
+    const supabaseUrl = 'https://xxxxx.supabase.co';
+    const supabaseKey = 'YOUR_SUPABASE_API_KEY';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    async function handleUpload() {
-      const fileInput = document.getElementById('csvFile');
+    async function handleExcelUpload() {
+      const fileInput = document.getElementById('excelFile');
       const file = fileInput.files[0];
-
       if (!file) {
-        alert('請選擇一個CSV檔案');
+        alert('請選擇一個Excel檔案');
         return;
       }
 
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: async function(results) {
-          const rows = results.data;
-          console.log('📄 解析筆數:', rows.length);
+      const reader = new FileReader();
+      reader.onload = async function (e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
 
-          // Validasi kolom wajib
-          const requiredCols = [
-            '包裝機板', '箱號', '備料單號', '原始備料單號',
-            '公司號', '包裝數量', '客戶', '客戶訂單號',
-            '送貨訂單號', '打包時間', '打包人員'
-          ];
+        if (!json.length) {
+          alert('Excel 檔案內容為空');
+          return;
+        }
 
-          const invalidCols = requiredCols.filter(col => !(col in rows[0]));
-          if (invalidCols.length > 0) {
-            alert('CSV 欄位錯誤或缺失：' + invalidCols.join(', '));
+        // Pastikan kolom cocok
+        const requiredCols = [
+          '包裝機板', '箱號', '備料單號', '原始備料單號',
+          '公司號', '包裝數量', '客戶', '客戶訂單號',
+          '送貨訂單號', '打包時間', '打包人員'
+        ];
+
+        const missingCols = requiredCols.filter(col => !(col in json[0]));
+        if (missingCols.length > 0) {
+          alert('缺少必要欄位：' + missingCols.join(', '));
+          return;
+        }
+
+        for (const row of json) {
+          const { error } = await supabase
+            .from('databarang')
+            .insert([{
+              packaging_board: row['包裝機板'],
+              box_number: row['箱號'],
+              material_order_number: row['備料單號'],
+              original_material_order_number: row['原始備料單號'],
+              company_number: row['公司號'],
+              packaging_quantity: parseInt(row['包裝數量']) || 0,
+              customer: row['客戶'],
+              customer_order_number: row['客戶訂單號'],
+              delivery_order_number: row['送貨訂單號'],
+              packaging_time: row['打包時間'] ? new Date(row['打包時間']).toISOString() : null,
+              packer: row['打包人員']
+            }]);
+
+          if (error) {
+            console.error('❌ 發生錯誤:', error);
+            alert('❌ 插入資料失敗: ' + error.message);
             return;
           }
-
-          // Mapping dan insert satu per satu
-          for (const row of rows) {
-            const { error } = await supabase
-              .from('databarang')
-              .insert([{
-                packaging_board: row['包裝機板'],
-                box_number: row['箱號'],
-                material_order_number: row['備料單號'],
-                original_material_order_number: row['原始備料單號'],
-                company_number: row['公司號'],
-                packaging_quantity: parseInt(row['包裝數量']) || 0,
-                customer: row['客戶'],
-                customer_order_number: row['客戶訂單號'],
-                delivery_order_number: row['送貨訂單號'],
-                packaging_time: row['打包時間'] ? new Date(row['打包時間']).toISOString() : null,
-                packer: row['打包人員']
-              }]);
-
-            if (error) {
-              console.error('❌ Gagal simpan:', error);
-              alert('發生錯誤: ' + error.message);
-              return;
-            }
-          }
-
-          alert('✅ 匯入成功，共 ' + rows.length + ' 筆資料');
-          fileInput.value = '';
         }
-      });
+
+        alert('✅ 匯入成功，共 ' + json.length + ' 筆資料');
+        fileInput.value = '';
+      };
+
+      reader.readAsArrayBuffer(file);
     }
   </script>
 </body>
