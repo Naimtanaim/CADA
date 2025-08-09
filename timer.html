@@ -47,14 +47,11 @@
   .print-area, .print-area * { visibility: visible; }
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .filters, .top-actions button { display: none !important; }
-
-  /* Sembunyikan kolom checkbox saat print */
   table thead th:first-child,
   table tbody td:first-child {
     display: none !important;
   }
 }
-
   </style>
 </head>
 <body>
@@ -123,8 +120,8 @@
 </div>
 
 <script>
-  const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';  // 替换成你的 Supabase URL
-  const SUPABASE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';  // 替换成你的 Supabase API KEY
+  const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+  const SUPABASE_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
   const TABLE_NAME = 'timer';
 
   let timerInterval = null;
@@ -154,29 +151,20 @@
       alert('计时器已在运行中');
       return;
     }
+    
     startTime = new Date();
     let seconds = 0;
     overtimeStarted = false;
     document.getElementById('overtimeAlert').style.display = 'none';
     document.getElementById('timer').textContent = '00:00';
 
-    timerInterval = setInterval(async () => {
+    timerInterval = setInterval(() => {
       seconds++;
       document.getElementById('timer').textContent = formatTime(seconds);
 
       if (seconds >= durationInput * 60 && !overtimeStarted) {
         overtimeStarted = true;
         showOvertimeAlert();
-        clearInterval(timerInterval);
-        timerInterval = null;
-        try {
-          await saveData(worker, item, durationInput, totalItemsInput, "超时");
-          alert('超时数据已保存');
-        } catch (e) {
-          alert('保存超时数据失败: ' + e.message);
-          console.error(e);
-        }
-        resetTimer();
       }
     }, 1000);
   }
@@ -188,16 +176,19 @@
     }
     clearInterval(timerInterval);
     timerInterval = null;
+
     const worker = document.getElementById('worker').value.trim();
     const item = document.getElementById('item').value.trim();
-
-    if (worker && item && startTime && !overtimeStarted) {
-      saveData(worker, item, durationInput, totalItemsInput, "完成").then(() => {
-        alert('完成数据已保存');
-      }).catch(e => {
-        alert('保存完成数据失败: ' + e.message);
-        console.error(e);
-      });
+    if (worker && item && startTime) {
+      const status = overtimeStarted ? "超时" : "完成";
+      saveData(worker, item, durationInput, totalItemsInput, status)
+        .then(() => {
+          alert(`${status} 数据已保存`);
+        })
+        .catch(e => {
+          alert('保存数据失败: ' + e.message);
+          console.error(e);
+        });
     }
     resetTimer();
   }
@@ -222,55 +213,39 @@
   async function saveData(worker, item, duration, totalItems, status) {
     const endTime = new Date();
     if (!startTime) startTime = new Date();
-    try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPABASE_API_KEY,
-          "Authorization": `Bearer ${SUPABASE_API_KEY}`,
-          "Prefer": "return=representation"
-        },
-        body: JSON.stringify({
-          worker_name: worker,
-          item_name: item,
-          duration_minutes: duration,
-          total_items: totalItems,
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          status: status
-        })
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`保存数据失败: ${res.status} - ${errText}`);
-      }
-      await fetchRecords();
-      resetForm(); // Kosongkan input setelah berhasil simpan
-    } catch (e) {
-      console.error('Error saving data:', e);
-      throw e;
-    }
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_API_KEY,
+        "Authorization": `Bearer ${SUPABASE_API_KEY}`,
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
+        worker_name: worker,
+        item_name: item,
+        duration_minutes: duration,
+        total_items: totalItems,
+        start_time: startTime.toISOString(),
+        end_time: endTime.toISOString(),
+        status: status
+      })
+    });
+    if (!res.ok) throw new Error(`保存数据失败: ${res.status}`);
+    await fetchRecords();
+    resetForm();
   }
 
   async function fetchRecords() {
-    try {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
-        headers: {
-          "apikey": SUPABASE_API_KEY,
-          "Authorization": `Bearer ${SUPABASE_API_KEY}`
-        }
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`获取数据失败: ${res.status} - ${errText}`);
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?select=*`, {
+      headers: {
+        "apikey": SUPABASE_API_KEY,
+        "Authorization": `Bearer ${SUPABASE_API_KEY}`
       }
-      allData = await res.json();
-      applyFilters();
-    } catch (e) {
-      alert('获取数据时出错: ' + e.message);
-      console.error(e);
-    }
+    });
+    if (!res.ok) throw new Error(`获取数据失败: ${res.status}`);
+    allData = await res.json();
+    applyFilters();
   }
 
   function applyFilters() {
@@ -290,19 +265,19 @@
     const tbody = document.getElementById("recordTable");
     tbody.innerHTML = "";
     data.forEach(row => {
-      const tr = document.createElement("tr");
       const statusColor = row.status === "超时" ? "red" : "black";
-      tr.innerHTML = `
-        <td><input type="checkbox" data-id="${row.id}"></td>
-        <td>${row.worker_name || ''}</td>
-        <td>${row.item_name || ''}</td>
-        <td>${row.total_items || ''}</td>
-        <td>${row.duration_minutes || ''}</td>
-        <td>${row.start_time ? new Date(row.start_time).toLocaleString() : ''}</td>
-        <td>${row.end_time ? new Date(row.end_time).toLocaleString() : ''}</td>
-        <td style="color:${statusColor}; font-weight: bold;">${row.status || ''}</td>
+      tbody.innerHTML += `
+        <tr>
+          <td><input type="checkbox" data-id="${row.id}"></td>
+          <td>${row.worker_name || ''}</td>
+          <td>${row.item_name || ''}</td>
+          <td>${row.total_items || ''}</td>
+          <td>${row.duration_minutes || ''}</td>
+          <td>${row.start_time ? new Date(row.start_time).toLocaleString() : ''}</td>
+          <td>${row.end_time ? new Date(row.end_time).toLocaleString() : ''}</td>
+          <td style="color:${statusColor}; font-weight: bold;">${row.status || ''}</td>
+        </tr>
       `;
-      tbody.appendChild(tr);
     });
   }
 
@@ -311,32 +286,23 @@
   }
 
   async function deleteSelected() {
-    const selectedIds = Array.from(document.querySelectorAll('#recordTable input[type="checkbox"]:checked'))
-      .map(cb => cb.dataset.id);
-    if (selectedIds.length === 0) {
+    const selectedIds = Array.from(document.querySelectorAll('#recordTable input[type="checkbox"]:checked')).map(cb => cb.dataset.id);
+    if (!selectedIds.length) {
       alert("请选择要删除的记录");
       return;
     }
     if (!confirm("确定要删除选中的记录吗？")) return;
-    try {
-      for (let id of selectedIds) {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${id}`, {
-          method: "DELETE",
-          headers: {
-            "apikey": SUPABASE_API_KEY,
-            "Authorization": `Bearer ${SUPABASE_API_KEY}`
-          }
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`删除失败: ${res.status} - ${errText}`);
+    for (let id of selectedIds) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${id}`, {
+        method: "DELETE",
+        headers: {
+          "apikey": SUPABASE_API_KEY,
+          "Authorization": `Bearer ${SUPABASE_API_KEY}`
         }
-      }
-      fetchRecords();
-    } catch (e) {
-      alert('删除数据时出错: ' + e.message);
-      console.error(e);
+      });
+      if (!res.ok) throw new Error(`删除失败: ${res.status}`);
     }
+    fetchRecords();
   }
 
   function printTable() {
