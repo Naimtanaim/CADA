@@ -110,7 +110,7 @@
       const company_number = document.getElementById('filter_company_number').value;
       const material_order_number = document.getElementById('filter_material_order_number').value;
 
-      let query = supabaseClient.from('databarang').select('*');
+      let query = supabaseClient.from('data').select('*');
 
       if (packaging_board) {
         query = query.ilike('packaging_board', `%${packaging_board}%`);
