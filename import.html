@@ -52,7 +52,7 @@
 
         for (const row of json) {
           const { error } = await supabase
-            .from('databarang')
+            .from('data')
             .insert([{
               packaging_board: row['包裝機板'],
               box_number: row['箱號'],
