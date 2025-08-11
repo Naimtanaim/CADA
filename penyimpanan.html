@@ -9,16 +9,16 @@
     body { font-family: 'Microsoft JhengHei', sans-serif; font-size: 13px; margin: 0; padding: 10px; background-color: #f9f9f9; }
     h3 { margin-bottom: 10px; }
     .toolbar { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .toolbar label { white-space: nowrap; }
-    .toolbar input { padding: 4px; font-size: 13px; }
+    .toolbar label { white-space: nowrap; flex: 0 0 100px; font-weight: 600; }
+    .toolbar input[type="text"] { flex: 1 1 400px; max-width: 150px; padding: 4px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; }
     .toolbar button { padding: 5px 12px; font-size: 13px; cursor: pointer; }
+    .employee-name { font-weight: bold; color: #006600; margin-left: 6px; min-width: 120px; flex: 0 0 auto; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; }
     th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
     th { background-color: #e0e0e0; }
     tr:nth-child(even) { background-color: #fff; }
     tr:nth-child(odd) { background-color: #f5f5f5; }
     .fixed-header { position: sticky; top: 0; background-color: #e0e0e0; z-index: 2; }
-    .employee-name { font-weight: bold; color: #006600; margin-left: 6px; min-width: 120px; }
     .error-message {
       position: fixed;
       top: 50%;
@@ -37,37 +37,6 @@
       max-width: 600px;
       border-radius: 8px;
     }
-    .toolbar {
-  margin-bottom: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.toolbar label {
-  white-space: nowrap;
-  flex: 0 0 100px; /* Lebar label tetap 100px, bisa diubah sesuai kebutuhan */
-  font-weight: 600;
-}
-
-.toolbar input[type="text"] {
-  flex: 1 1 400px; /* Lebar input bisa meluas sampai 300px */
-  max-width: 150px; /* Maksimal lebar input */
-  padding: 4px 8px;
-  font-size: 13px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-.employee-name {
-  font-weight: bold;
-  color: #006600;
-  margin-left: 6px;
-  min-width: 120px;
-  flex: 0 0 auto; /* Jangan melebar, sesuai konten */
-}
-
   </style>
 </head>
 <body>
@@ -124,16 +93,18 @@
     const errorBox = document.getElementById("errorBox");
     const dataTableBody = document.querySelector("#dataTable tbody");
 
-    // Fungsi untuk tampilkan error pesan selama 2 detik
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.style.display = "block";
-      setTimeout(() => {
-        errorBox.style.display = "none";
-      }, 3000);
-    }
+    let isKaryawan = false;
 
-    // Cari nama karyawan sesuai barcode
+    // ✅ Update status karyawan otomatis
+    employeeBarcodeInput.addEventListener("focus", () => { isKaryawan = true; });
+    employeeBarcodeInput.addEventListener("blur", () => {
+      if (employeeBarcodeInput.value.trim() === "") isKaryawan = false;
+    });
+    employeeBarcodeInput.addEventListener("input", () => {
+      isKaryawan = employeeBarcodeInput.value.trim() !== "";
+    });
+
+    // ✅ Setelah scan karyawan, cek nama lalu pindah fokus ke packagingBoard
     employeeBarcodeInput.addEventListener("change", async () => {
       const barcode = employeeBarcodeInput.value.trim();
       if (!barcode) {
@@ -151,15 +122,34 @@
       } else {
         employeeNameSpan.textContent = data.name;
         employeeNameSpan.style.color = "#006600";
+        packagingBoardInput.focus(); // pindah fokus
       }
     });
 
-    // Scan barcode packing
+    // ✅ Setelah isi packagingBoard, langsung ke scanBarcode
+    packagingBoardInput.addEventListener("change", () => {
+      if (packagingBoardInput.value.trim() !== "") {
+        scanBarcodeInput.focus();
+      }
+    });
+
+    function showError(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+      setTimeout(() => { errorBox.style.display = "none"; }, 3000);
+    }
+
+    // ✅ Scan barcode hanya kalau karyawan aktif
     scanBarcodeInput.addEventListener("change", async () => {
+      if (!isKaryawan) {
+        showError("⚠ 請先輸入員工條碼");
+        scanBarcodeInput.value = "";
+        employeeBarcodeInput.focus();
+        return;
+      }
       const barcode = scanBarcodeInput.value.trim();
       if (!barcode) return;
 
-      // Cari data packing dari tabel data
       const { data: shipment, error } = await supabaseClient
         .from("data")
         .select("*")
@@ -172,10 +162,6 @@
         return;
       }
 
-      // Sembunyikan error kalau ada
-      errorBox.style.display = "none";
-
-      // Simpan data ke tabel simpan
       const { error: insertError } = await supabaseClient
         .from("simpan")
         .insert([{
@@ -198,14 +184,10 @@
         return;
       }
 
-      // Tambah baris data ke tabel tampilan
       addRowToTable(shipment, employeeNameSpan.textContent || '');
-
-      // Kosongkan input barcode
       scanBarcodeInput.value = "";
     });
 
-    // Fungsi tambah baris ke tabel
     function addRowToTable(shipment, packer) {
       const row = document.createElement("tr");
       row.innerHTML = `
@@ -225,19 +207,11 @@
       dataTableBody.appendChild(row);
     }
 
-    // Tombol hapus data terpilih
     document.getElementById("btnDeleteSelected").addEventListener("click", async () => {
       const checkboxes = dataTableBody.querySelectorAll("input[type='checkbox']:checked");
-      if (checkboxes.length === 0) {
-        alert("請選擇要刪除的項目");
-        return;
-      }
+      if (checkboxes.length === 0) { alert("請選擇要刪除的項目"); return; }
+      if (!confirm(`確定刪除 ${checkboxes.length} 筆資料嗎？`)) return;
 
-      if (!confirm(`確定刪除 ${checkboxes.length} 筆資料嗎？`)) {
-        return;
-      }
-
-      // Kumpulkan packaging_board dari baris terpilih
       const packagingBoards = [];
       checkboxes.forEach(cb => {
         const row = cb.closest("tr");
@@ -245,18 +219,12 @@
         packagingBoards.push(board);
       });
 
-      // Hapus dari tabel simpan di Supabase berdasarkan packaging_board
       const { error } = await supabaseClient
         .from("simpan")
         .delete()
         .in("packaging_board", packagingBoards);
 
-      if (error) {
-        alert("刪除失敗: " + error.message);
-        return;
-      }
-
-      // Hapus baris dari tabel tampilan
+      if (error) { alert("刪除失敗: " + error.message); return; }
       checkboxes.forEach(cb => cb.closest("tr").remove());
     });
   </script>
