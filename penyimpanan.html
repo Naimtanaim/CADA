@@ -1,232 +1,223 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <title>出貨課包裝條碼掃描與儲存</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { font-family: 'Microsoft JhengHei', sans-serif; font-size: 13px; margin: 0; padding: 10px; background-color: #f9f9f9; }
-    h3 { margin-bottom: 10px; }
-    .toolbar { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-    .toolbar label { white-space: nowrap; flex: 0 0 100px; font-weight: 600; }
-    .toolbar input[type="text"] { flex: 1 1 400px; max-width: 150px; padding: 4px 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; }
-    .toolbar button { padding: 5px 12px; font-size: 13px; cursor: pointer; }
-    .employee-name { font-weight: bold; color: #006600; margin-left: 6px; min-width: 120px; flex: 0 0 auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-    th { background-color: #e0e0e0; }
-    tr:nth-child(even) { background-color: #fff; }
-    tr:nth-child(odd) { background-color: #f5f5f5; }
-    .fixed-header { position: sticky; top: 0; background-color: #e0e0e0; z-index: 2; }
-    .error-message {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: red;
-      font-size: 26px;
-      font-weight: bold;
-      border: 3px solid red;
-      background-color: #ffe6e6;
-      padding: 20px 40px;
-      display: none;
-      text-align: center;
-      z-index: 9999;
-      min-width: 300px;
-      max-width: 600px;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>依客戶別棧位 (F_05) 1.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body {
+    font-family: 'Microsoft JhengHei', sans-serif;
+    background: #eee;
+    margin: 20px;
+    user-select: none;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .header label {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  input[type=text] {
+    padding: 4px 6px;
+    font-size: 18px;
+    width: 140px;
+  }
+  .header .customer-info {
+    font-size: 18px;
+    white-space: nowrap;
+    margin-left: 20px;
+  }
+  #btnSelect {
+    margin-left: 12px;
+    height: 37px;
+    font-size: 18px;
+    cursor: pointer;
+  }
+  table {
+    width: 50%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 12px;
+    font-size: 16px;
+  }
+  th, td {
+    border: 1px solid #bbb;
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  th {
+    background: #ddd;
+  }
+  td:first-child {
+    width: 30px;
+  }
+  td:nth-child(2) {
+    width: 60px;
+  }
+  td:nth-child(3) {
+    width: 100px;
+  }
+  button.detail-btn {
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #employeeName {
+    font-weight: bold;
+    margin-left: 10px;
+    color: green;
+  }
+  #errorLog {
+    margin-top: 12px;
+    color: red;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-  <h3>出貨課條碼掃描與儲存</h3>
-
-  <div class="toolbar">
+  <div class="header">
     <label for="employeeBarcode">員工條碼:</label>
     <input type="text" id="employeeBarcode" placeholder="" autofocus autocomplete="off" />
-    <span id="employeeName" class="employee-name"></span>
+    <span id="employeeName"></span>
   </div>
 
-  <div class="toolbar">
-    <label for="packagingBoard">包裝機板:</label>
-    <input type="text" id="packagingBoard" placeholder="" autocomplete="off" />
+  <div class="header" style="margin-top: 6px;">
+    <label for="templateBarcode">客戶端位模板條碼:</label>
+    <input type="text" id="templateBarcode" value="" />
+    <div class="customer-info">客戶：<strong>H-149</strong></div>
+    <div class="customer-info"><strong>H-149</strong></div>
+    <label for="cartonBarcode" style="margin-left: 20px;">紙箱Barcode:</label>
+    <input type="text" id="cartonBarcode" style="width: 180px;" />
+    <button id="btnSelect">勾選務出棧板</button>
   </div>
 
-  <div class="toolbar">
-    <label for="scanBarcode">BARCODE:</label>
-    <input type="text" id="scanBarcode" placeholder="" autocomplete="off" />
-    <button id="btnDeleteSelected" style="color: red;">刪除選取</button>
-  </div>
-
-  <div id="errorBox" class="error-message">❌ 找不到對應的包裝條碼資料</div>
-
-  <table id="dataTable">
+  <table>
     <thead>
       <tr>
-        <th class="fixed-header">選取</th>
-        <th class="fixed-header">包裝機板</th>
-        <th class="fixed-header">箱號</th>
-        <th class="fixed-header">物料訂單號</th>
-        <th class="fixed-header">原物料訂單號</th>
-        <th class="fixed-header">公司號</th>
-        <th class="fixed-header">數量</th>
-        <th class="fixed-header">客戶</th>
-        <th class="fixed-header">客戶訂單號</th>
-        <th class="fixed-header">出貨單號</th>
-        <th class="fixed-header">包裝時間</th>
-        <th class="fixed-header">包裝員</th>
+        <th>項</th>
+        <th>紙箱Barcode</th>
+        <th>明細</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="barcodeList">
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80114</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80125</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80126</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80041</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80049</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+      </tr>
+    </tbody>
   </table>
 
-  <script>
-    const supabaseUrl = "https://uusljhegkvahcjkaxqkz.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+  <div id="errorLog"></div>
 
-    const employeeBarcodeInput = document.getElementById("employeeBarcode");
-    const employeeNameSpan = document.getElementById("employeeName");
-    const packagingBoardInput = document.getElementById("packagingBoard");
-    const scanBarcodeInput = document.getElementById("scanBarcode");
-    const errorBox = document.getElementById("errorBox");
-    const dataTableBody = document.querySelector("#dataTable tbody");
+<script>
+  // Ganti dengan URL dan ANON KEY Supabase milikmu
+  const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
 
-    let isKaryawan = false;
+  // Inisialisasi client Supabase, jangan pakai nama 'supabase' karena bentrok global object
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ✅ Update status karyawan otomatis
-    employeeBarcodeInput.addEventListener("focus", () => { isKaryawan = true; });
-    employeeBarcodeInput.addEventListener("blur", () => {
-      if (employeeBarcodeInput.value.trim() === "") isKaryawan = false;
-    });
-    employeeBarcodeInput.addEventListener("input", () => {
-      isKaryawan = employeeBarcodeInput.value.trim() !== "";
-    });
+  const employeeBarcodeInput = document.getElementById('employeeBarcode');
+  const employeeNameDisplay = document.getElementById('employeeName');
+  const errorLog = document.getElementById('errorLog');
 
-    // ✅ Setelah scan karyawan, cek nama lalu pindah fokus ke packagingBoard
-    employeeBarcodeInput.addEventListener("change", async () => {
-      const barcode = employeeBarcodeInput.value.trim();
-      if (!barcode) {
-        employeeNameSpan.textContent = "";
-        return;
-      }
-      const { data, error } = await supabaseClient
-        .from("employees")
-        .select("name")
-        .eq("barcode", barcode)
-        .single();
-      if (error || !data) {
-        employeeNameSpan.textContent = "";
-        employeeNameSpan.style.color = "red";
-      } else {
-        employeeNameSpan.textContent = data.name;
-        employeeNameSpan.style.color = "#006600";
-        packagingBoardInput.focus(); // pindah fokus
-      }
-    });
+  let typingTimer;
+  const doneTypingInterval = 500;
 
-    // ✅ Setelah isi packagingBoard, langsung ke scanBarcode
-    packagingBoardInput.addEventListener("change", () => {
-      if (packagingBoardInput.value.trim() !== "") {
-        scanBarcodeInput.focus();
-      }
-    });
+  employeeBarcodeInput.addEventListener('input', () => {
+    clearTimeout(typingTimer);
+    const barcode = employeeBarcodeInput.value.trim();
 
-    function showError(message) {
-      errorBox.textContent = message;
-      errorBox.style.display = "block";
-      setTimeout(() => { errorBox.style.display = "none"; }, 3000);
+    if (!barcode) {
+      employeeNameDisplay.textContent = '';
+      errorLog.textContent = '';
+      return;
     }
 
-    // ✅ Scan barcode hanya kalau karyawan aktif
-    scanBarcodeInput.addEventListener("change", async () => {
-      if (!isKaryawan) {
-        showError("⚠ 請先輸入員工條碼");
-        scanBarcodeInput.value = "";
-        employeeBarcodeInput.focus();
-        return;
+    typingTimer = setTimeout(async () => {
+      employeeNameDisplay.textContent = '';
+      employeeNameDisplay.style.color = 'black';
+      errorLog.textContent = '';
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('employees')
+          .select('name')
+          .eq('barcode', barcode)
+          .single();
+
+        if (error) {
+          errorLog.textContent = 'Supabase error: ' + error.message;
+          employeeNameDisplay.textContent = '';
+          employeeNameDisplay.style.color = 'red';
+          console.error('Supabase error:', error);
+          return;
+        }
+
+        if (!data) {
+          employeeNameDisplay.textContent = '無此員工條碼';
+          employeeNameDisplay.style.color = 'red';
+          return;
+        }
+
+        employeeNameDisplay.textContent = data.name;
+        employeeNameDisplay.style.color = 'green';
+      } catch (err) {
+        errorLog.textContent = 'Unexpected error: ' + err.message;
+        employeeNameDisplay.textContent = '查詢失敗';
+        employeeNameDisplay.style.color = 'red';
+        console.error('Unexpected error:', err);
       }
-      const barcode = scanBarcodeInput.value.trim();
-      if (!barcode) return;
+    }, doneTypingInterval);
+  });
 
-      const { data: shipment, error } = await supabaseClient
-        .from("data")
-        .select("*")
-        .eq("packaging_board", barcode)
-        .single();
-
-      if (error || !shipment) {
-        showError("❌ 找不到對應的包裝條碼資料");
-        scanBarcodeInput.value = "";
-        return;
-      }
-
-      const { error: insertError } = await supabaseClient
-        .from("simpan")
-        .insert([{
-          packaging_board: packagingBoardInput.value.trim() || shipment.packaging_board,
-          box_number: shipment.box_number,
-          material_order_number: shipment.material_order_number,
-          original_material_order_number: shipment.original_material_order_number,
-          company_number: shipment.company_number,
-          packaging_quantity: shipment.packaging_quantity,
-          customer: shipment.customer,
-          customer_order_number: shipment.customer_order_number,
-          delivery_order_number: shipment.delivery_order_number,
-          packaging_time: new Date().toISOString(),
-          packer: employeeNameSpan.textContent || ''
-        }]);
-
-      if (insertError) {
-        showError("❌ 儲存失敗: " + insertError.message);
-        scanBarcodeInput.value = "";
-        return;
-      }
-
-      addRowToTable(shipment, employeeNameSpan.textContent || '');
-      scanBarcodeInput.value = "";
+  // Tombol detail pengiriman contoh
+  document.querySelectorAll('.detail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      alert('Tampilkan detail pengiriman untuk barcode ini.');
     });
+  });
 
-    function addRowToTable(shipment, packer) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input type="checkbox" /></td>
-        <td>${shipment.packaging_board || ""}</td>
-        <td>${shipment.box_number || ""}</td>
-        <td>${shipment.material_order_number || ""}</td>
-        <td>${shipment.original_material_order_number || ""}</td>
-        <td>${shipment.company_number || ""}</td>
-        <td>${shipment.packaging_quantity || ""}</td>
-        <td>${shipment.customer || ""}</td>
-        <td>${shipment.customer_order_number || ""}</td>
-        <td>${shipment.delivery_order_number || ""}</td>
-        <td>${new Date().toLocaleString()}</td>
-        <td>${packer}</td>
-      `;
-      dataTableBody.appendChild(row);
+  // Tombol select checked barcode
+  document.getElementById('btnSelect').addEventListener('click', () => {
+    const checkedBarcodes = [...document.querySelectorAll('#barcodeList input[type=checkbox]:checked')]
+      .map(cb => cb.closest('tr').children[1].textContent);
+
+    if (checkedBarcodes.length === 0) {
+      alert('請先勾選至少一個紙箱Barcode');
+      return;
     }
 
-    document.getElementById("btnDeleteSelected").addEventListener("click", async () => {
-      const checkboxes = dataTableBody.querySelectorAll("input[type='checkbox']:checked");
-      if (checkboxes.length === 0) { alert("請選擇要刪除的項目"); return; }
-      if (!confirm(`確定刪除 ${checkboxes.length} 筆資料嗎？`)) return;
-
-      const packagingBoards = [];
-      checkboxes.forEach(cb => {
-        const row = cb.closest("tr");
-        const board = row.children[1].textContent;
-        packagingBoards.push(board);
-      });
-
-      const { error } = await supabaseClient
-        .from("simpan")
-        .delete()
-        .in("packaging_board", packagingBoards);
-
-      if (error) { alert("刪除失敗: " + error.message); return; }
-      checkboxes.forEach(cb => cb.closest("tr").remove());
-    });
-  </script>
+    alert('Barcodes terpilih:\n' + checkedBarcodes.join('\n'));
+  });
+</script>
 </body>
 </html>
