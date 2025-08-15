@@ -1,1 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<title>依客戶別棧位 (F_05) 1.0</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  body {
+    font-family: 'Microsoft JhengHei', sans-serif;
+    background: #eee;
+    margin: 20px;
+    user-select: none;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .header label {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  input[type=text] {
+    padding: 4px 6px;
+    font-size: 18px;
+    width: 140px;
+  }
+  input:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+  }
+  .header .customer-info {
+    font-size: 16px;
+    white-space: nowrap;
+    margin-left: 20px;
+  }
+  #btnSelect {
+    margin-left: 12px;
+    height: 37px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  table {
+    width: 60%;
+    border-collapse: collapse;
+    background: white;
+    margin-top: 12px;
+    font-size: 16px;
+  }
+  th, td {
+    border: 1px solid #bbb;
+    padding: 6px 8px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  th {
+    background: #ddd;
+  }
+  td:first-child {
+    width: 30px;
+  }
+  td:nth-child(2) {
+    width: 60px;
+  }
+  td:nth-child(3) {
+    width: 100px;
+  }
+  td.employee-valid {
+    width: 80px;
+    font-weight: bold;
+  }
+  button.detail-btn {
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  #employeeName {
+    font-weight: bold;
+    margin-left: 10px;
+    color: green;
+  }
+  #errorLog {
+    margin-top: 12px;
+    color: red;
+    font-weight: bold;
+  }
+  .popup-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    background-color: #ff4d4d;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 1px;
+    font-size: 70px;
+    font-weight: bold;
+    white-space: nowrap;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    animation: fadeIn 0.3s ease forwards;
+    z-index: 1000;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+  }
+  .fade-out {
+    animation: fadeOut 0.5s ease forwards;
+  }
+  .popup-message::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #ff4d4d transparent transparent transparent;
+  }
+</style>
+</head>
+<body>
+  <!-- Employee barcode -->
+  <div class="header">
+    <label for="employeeBarcode">員工條碼:</label>
+    <input type="text" id="employeeBarcode" autofocus autocomplete="off" />
+    <span id="employeeName"></span>
+    <div class="popup-message" id="popup-employeeBarcode">⚠️ 無此員工條碼</div>
+  </div>
 
+  <!-- Template barcode -->
+  <div class="header">
+    <label for="templateBarcode">客戶端位模板條碼:</label>
+    <input type="text" id="templateBarcode" style="width: 100px;" disabled />
+    <div class="customer-info">客戶：<strong>H-149</strong></div>
+  </div>
+
+  <!-- Carton barcode -->
+  <div class="header">
+    <label for="cartonBarcode">紙箱Barcode:</label>
+    <input type="text" id="cartonBarcode" style="width: 100px;" disabled />
+    <div class="popup-message" id="popup-cartonBarcode">⚠️ 無此紙箱條碼</div>
+    <button id="btnSelect">勾選務出棧板</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>項</th>
+        <th>紙箱Barcode</th>
+        <th>明細</th>
+        <th>Valid Karyawan</th>
+      </tr>
+    </thead>
+    <tbody id="barcodeList">
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80114</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+        <td class="employee-valid">-</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td>80125</td>
+        <td><button class="detail-btn">出貨明細</button></td>
+        <td class="employee-valid">-</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="errorLog"></div>
+
+<script>
+  const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let employeeValid = false;
+
+  async function cekEmployee() {
+    const barcode = document.getElementById('employeeBarcode').value.trim();
+    const popup = document.getElementById('popup-employeeBarcode');
+    const nameDisplay = document.getElementById('employeeName');
+
+    if (!barcode) {
+      popup.style.display = 'block';
+      nameDisplay.textContent = '';
+      employeeValid = false;
+      disableOtherInputs();
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('employees')
+      .select('name')
+      .eq('barcode', barcode)
+      .maybeSingle();
+
+    if (error || !data) {
+      popup.style.display = 'block';
+      nameDisplay.textContent = '';
+      employeeValid = false;
+      disableOtherInputs();
+      setTimeout(() => { popup.style.display = 'none'; }, 3000);
+      return;
+    }
+
+    nameDisplay.textContent = data.name;
+    nameDisplay.style.color = 'green';
+    popup.style.display = 'none';
+    employeeValid = true;
+    enableOtherInputs();
+  }
+
+ function enableOtherInputs() {
+  const templateInput = document.getElementById('templateBarcode');
+  const cartonInput = document.getElementById('cartonBarcode');
+  templateInput.disabled = false;
+  cartonInput.disabled = false;
+
+  // Otomatis fokus ke input templateBarcode
+  templateInput.focus();
+}
+
+
+  function enableOtherInputs() {
+    document.getElementById('templateBarcode').disabled = false;
+    document.getElementById('cartonBarcode').disabled = false;
+  }
+
+  // Event listener untuk input Employee
+  document.getElementById('employeeBarcode').addEventListener('input', () => {
+    // set timeout untuk debounce typing
+    clearTimeout(window.employeeTypingTimer);
+    window.employeeTypingTimer = setTimeout(cekEmployee, 500);
+  });
+
+  // Setup untuk template dan carton barcode tetap pakai Supabase check
+  async function setupBarcodeCheck(inputId, tableName) {
+    const input = document.getElementById(inputId);
+    const popup = document.getElementById(`popup-${inputId}`);
+    let typingTimer;
+
+    input.addEventListener('input', () => {
+      clearTimeout(typingTimer);
+      if (!employeeValid) return; // tidak boleh input jika employee belum valid
+      const barcode = input.value.trim();
+      if (!barcode) return;
+
+      typingTimer = setTimeout(async () => {
+        const { data, error } = await supabaseClient
+          .from(tableName)
+          .select('name')
+          .eq('barcode', barcode)
+          .maybeSingle();
+
+        if (!data) {
+          popup.style.display = 'block';
+          setTimeout(() => { popup.style.display = 'none'; }, 3000);
+          return;
+        }
+
+        popup.style.display = 'none';
+      }, 500);
+    });
+  }
+
+  setupBarcodeCheck('templateBarcode', 'templates');
+  setupBarcodeCheck('cartonBarcode', 'cartons');
+
+  document.getElementById('btnSelect').addEventListener('click', () => {
+    if (!employeeValid) {
+      alert('請先輸入有效員工條碼');
+      return;
+    }
+    const checkedBarcodes = [...document.querySelectorAll('#barcodeList input[type=checkbox]:checked')]
+      .map(cb => cb.closest('tr').children[1].textContent);
+    if (checkedBarcodes.length === 0) {
+      alert('請先勾選至少一個紙箱Barcode');
+      return;
+    }
+    alert('Barcodes terpilih:\n' + checkedBarcodes.join('\n'));
+  });
+
+  // Nonaktifkan input template & carton di awal
+  disableOtherInputs();
+</script>
+</body>
+</html>
