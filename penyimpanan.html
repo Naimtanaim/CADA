@@ -132,7 +132,7 @@
   <!-- Employee barcode -->
   <div class="header">
     <label for="employeeBarcode">員工條碼:</label>
-    <input type="text" id="employeeBarcode" autofocus autocomplete="off" />
+    <input type="text" id="employeeBarcode" autofocus autocomplete="on" />
     <span id="employeeName"></span>
     <div class="popup-message" id="popup-employeeBarcode">⚠️ 無此員工條碼</div>
   </div>
@@ -158,7 +158,6 @@
         <th>項</th>
         <th>紙箱Barcode</th>
         <th>明細</th>
-        <th>Valid Karyawan</th>
       </tr>
     </thead>
     <tbody id="barcodeList">
@@ -166,13 +165,11 @@
         <td><input type="checkbox" /></td>
         <td>80114</td>
         <td><button class="detail-btn">出貨明細</button></td>
-        <td class="employee-valid">-</td>
       </tr>
       <tr>
         <td><input type="checkbox" /></td>
         <td>80125</td>
         <td><button class="detail-btn">出貨明細</button></td>
-        <td class="employee-valid">-</td>
       </tr>
     </tbody>
   </table>
@@ -184,7 +181,6 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let employeeValid = false;
 
   async function cekEmployee() {
     const barcode = document.getElementById('employeeBarcode').value.trim();
@@ -221,7 +217,12 @@
     enableOtherInputs();
   }
 
- function enableOtherInputs() {
+  function disableOtherInputs() {
+    document.getElementById('templateBarcode').disabled = true;
+    document.getElementById('cartonBarcode').disabled = true;
+  }
+
+  function enableOtherInputs() {
   const templateInput = document.getElementById('templateBarcode');
   const cartonInput = document.getElementById('cartonBarcode');
   templateInput.disabled = false;
@@ -231,11 +232,6 @@
   templateInput.focus();
 }
 
-
-  function enableOtherInputs() {
-    document.getElementById('templateBarcode').disabled = false;
-    document.getElementById('cartonBarcode').disabled = false;
-  }
 
   // Event listener untuk input Employee
   document.getElementById('employeeBarcode').addEventListener('input', () => {
