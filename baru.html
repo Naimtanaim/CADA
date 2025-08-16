@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>委運簽單 — 永昌交通企業有限公司</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --border: #111;
+      --muted: #666;
+      --accent: #0b6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans TC', system-ui, -apple-system, Segoe UI, Roboto, 'Microsoft JhengHei', sans-serif;
+      margin: 0; background:#f3f3f3; color:#111;
+    }
+
+    .wrap { max-width: 1200px; margin: 24px auto; padding: 16px; }
+
+    .card { background:#fff; border:1px solid #ddd; border-radius:16px; box-shadow:0 4px 18px rgba(0,0,0,.06); overflow:hidden; }
+    .card header { padding:16px 20px; border-bottom:1px dashed #ddd; display:flex; align-items:center; gap:12px; }
+    .title { font-size:20px; font-weight:700; }
+    .sub { color:var(--muted); font-size:14px; }
+
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; padding:16px 20px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:13px; color:#333; }
+    .field input, .field textarea, .field select {
+      border:1px solid #cfcfcf; border-radius:10px; padding:10px 12px; font-size:15px; outline:none;
+    }
+    .field textarea { min-height:92px; resize:vertical; }
+
+    .toolbar { display:flex; gap:10px; padding:0 20px 18px; }
+    button {
+      border:none; background:#111; color:#fff; padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer;
+    }
+    button.secondary { background:#e9e9e9; color:#111; }
+    button.accent { background:var(--accent); }
+
+    /* Printable sheet */
+    .sheet-wrap { margin-top:24px; }
+    .sheet { background:#fff; border:1.2px solid var(--border); padding:16px; aspect-ratio: 1.414/1; /* A4 ratio */
+             width: 100%; max-width: 930px; margin:auto; }
+
+    .sheet .heading { text-align:center; }
+    .sheet .heading h1 { margin:0; font-size:26px; letter-spacing:2px; }
+    .sheet .heading .company { font-size:22px; font-weight:700; letter-spacing:3px; margin-bottom:4px; }
+    .sheet .heading .line { font-size:13px; color:#222; }
+
+    .row { display:grid; grid-template-columns: 2.2fr 1.3fr; gap:10px; margin-top:12px; }
+    .box { border:1px solid var(--border); min-height:40px; }
+
+    .top-grid { display:grid; grid-template-columns: 2.2fr 1.1fr 0.9fr; gap:10px; margin-top:10px; }
+
+    .tbl { width:100%; border-collapse:collapse; }
+    .tbl th, .tbl td { border:1px solid var(--border); padding:6px 8px; vertical-align:top; }
+    .tbl th { background:#fafafa; font-weight:600; }
+    .note { color:#333; font-size:12px; }
+
+    .titlebar { display:flex; justify-content:space-between; align-items:end; }
+
+    .r { text-align:right; }
+
+    /* Smaller text helpers */
+    .s { font-size:13px; color:#222; }
+
+    /* Print styles */
+    @media print {
+      body { background:#fff; }
+      .card, .toolbar, .wrap > h2, .wrap > p { display:none !important; }
+      .sheet { border:1px solid #000; width: 180mm; height: 250mm; aspect-ratio:auto; padding:10mm; }
+      .print-only { display:block; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="card">
+      <header>
+        <div class="title">Form Input — 委運簽單</div>
+        <div class="sub">Isi data di bawah, lalu klik <b>Pratinjau & Cetak</b>. Pada saat print, hanya template akan ditampilkan.</div>
+      </header>
+      <div class="grid">
+        <div class="field"><label>公司名稱</label><input id="company" value="永昌交通企業有限公司"/></div>
+        <div class="field"><label>訂貨線 (電話)</label><input id="hotline" value="0939-929-626"/></div>
+        <div class="field"><label>日期</label><input id="date" type="date"/></div>
+        <div class="field"><label>客稱 / 顧客名稱</label><input id="customer" placeholder="例如：友穎文龍"/></div>
+        <div class="field"><label>統一編號</label><input id="taxid"/></div>
+        <div class="field"><label>地址</label><input id="addr"/></div>
+        <div class="field"><label>電話</label><input id="phone"/></div>
+        <div class="field"><label>車型</label><input id="vehType"/></div>
+        <div class="field"><label>載重 (噸)</label><input id="capacity"/></div>
+        <div class="field"><label>車號</label><input id="plate"/></div>
+        <div class="field" style="grid-column:1 / span 2"><label>運送起訖點 / 記載</label><textarea id="route" placeholder="例如：H-395 岡頂 1×4件，○○ 311才；另外 賀頂 5×件 3491kg，457才"></textarea></div>
+        <div class="field"><label>司機 (代號)</label><input id="driver"/></div>
+        <div class="field"><label>公司上貨時間</label><input id="loadTime" type="time"/></div>
+        <div class="field"><label>下貨時間</label><input id="unloadTime" type="time"/></div>
+        <div class="field"><label>共同使用時間 (時)</label><input id="usageHr" type="number" min="0" step="0.5"/></div>
+        <div class="field"><label>基本運費時間 (時)</label><input id="baseHr" type="number" min="0" step="0.5"/></div>
+        <div class="field"><label>超時費用 (元)</label><input id="overtimeFee" type="number" min="0"/></div>
+        <div class="field"><label>包裝—數量(板/件)</label><input id="pkgQty" placeholder="例如：板181 件"/></div>
+        <div class="field"><label>重量 (kg)</label><input id="weight" type="number" min="0" step="0.1"/></div>
+        <div class="field"><label>才數</label><input id="cubic" type="number" min="0" step="1"/></div>
+        <div class="field"><label>基本運費 (元)</label><input id="baseFee" type="number" min="0"/></div>
+        <div class="field"><label>另外 — 點數 × 單價</label><input id="extraPoint" placeholder="例如：1 點 × 500"/></div>
+        <div class="field"><label>搬工 (元)</label><input id="laborFee" type="number" min="0"/></div>
+        <div class="field"><label>備註</label><input id="remark"/></div>
+        <div class="field"><label>總計 (元)</label><input id="total" type="number" min="0"/></div>
+      </div>
+      <div class="toolbar">
+        <button class="secondary" type="button" onclick="fillDemo()">Isi Contoh</button>
+        <button class="accent" type="button" onclick="previewToSheet()">Pratinjau & Cetak</button>
+        <button type="button" onclick="window.print()">Cetak</button>
+      </div>
+    </div>
+
+    <!-- PRINTABLE TEMPLATE -->
+    <div class="sheet-wrap">
+      <div class="sheet" id="sheet">
+        <div class="heading">
+          <div class="company" id="s_company">永昌交通企業有限公司</div>
+          <div class="titlebar">
+            <div class="line">裝訂線　電話：<span id="s_hotline">0939-929-626</span></div>
+            <div class="line">日期：<span id="s_date"></span></div>
+          </div>
+          <h1>委運簽單</h1>
+        </div>
+
+        <div class="top-grid">
+          <table class="tbl">
+            <tr>
+              <th style="width:20%">客稱 / 顧名</th>
+              <td id="s_customer"></td>
+              <th style="width:20%">統編</th>
+              <td id="s_taxid" style="width:26%"></td>
+            </tr>
+            <tr>
+              <th>地址</th>
+              <td id="s_addr"></td>
+              <th>電話</th>
+              <td id="s_phone"></td>
+            </tr>
+          </table>
+          <table class="tbl">
+            <tr>
+              <th>車型</th><td id="s_vehType"></td>
+              <th>載重(噸)</th><td id="s_capacity"></td>
+            </tr>
+            <tr>
+              <th>車號</th><td id="s_plate"></td>
+              <th>司機(代號)</th><td id="s_driver"></td>
+            </tr>
+          </table>
+          <table class="tbl">
+            <tr>
+              <th>公司上貨</th><td id="s_loadTime" style="width:50%"></td>
+            </tr>
+            <tr>
+              <th>下貨時間</th><td id="s_unloadTime"></td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-top:10px">
+          <table class="tbl">
+            <tr>
+              <th style="width:14%">運送起訖點 / 記</th>
+              <td id="s_route"></td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-top:10px">
+          <table class="tbl">
+            <tr>
+              <th style="width:10%">包裝</th>
+              <th style="width:28%">數量(板/件)</th>
+              <th style="width:18%">重量(kg)</th>
+              <th style="width:18%">才數</th>
+              <th>備註</th>
+            </tr>
+            <tr>
+              <td class="s">—</td>
+              <td id="s_pkgQty"></td>
+              <td id="s_weight"></td>
+              <td id="s_cubic"></td>
+              <td id="s_remark"></td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="margin-top:10px">
+          <table class="tbl">
+            <tr>
+              <th style="width:16%">計費方式</th>
+              <th style="width:20%">基本運費(元)</th>
+              <th style="width:28%">另外 (點數×單價)</th>
+              <th style="width:18%">搬工(元)</th>
+              <th style="width:18%">超時費用(元)</th>
+            </tr>
+            <tr>
+              <td class="s">—</td>
+              <td id="s_baseFee"></td>
+              <td id="s_extraPoint"></td>
+              <td id="s_laborFee"></td>
+              <td id="s_overtimeFee"></td>
+            </tr>
+          </table>
+          <table class="tbl" style="margin-top:6px">
+            <tr>
+              <th style="width:16%">共同使用(時)</th>
+              <td style="width:18%" id="s_usageHr"></td>
+              <th style="width:18%">基本運費時間(時)</th>
+              <td style="width:18%" id="s_baseHr"></td>
+              <th style="width:14%">總計(元)</th>
+              <td id="s_total"></td>
+            </tr>
+          </table>
+          <div class="note" style="margin-top:8px">收費求公道　有錯當查　※感謝惠顧※</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function $(id){return document.getElementById(id);}    
+
+    function humanDate(iso){
+      if(!iso) return '';
+      const d = new Date(iso);
+      const y = d.getFullYear();
+      const m = (d.getMonth()+1).toString().padStart(2,'0');
+      const day = d.getDate().toString().padStart(2,'0');
+      return y + '年' + m + '月' + day + '日';
+    }
+
+    function previewToSheet(){
+      // Map inputs to sheet placeholders
+      const map = [
+        ['company','s_company'], ['hotline','s_hotline'], ['customer','s_customer'],
+        ['taxid','s_taxid'], ['addr','s_addr'], ['phone','s_phone'],
+        ['vehType','s_vehType'], ['capacity','s_capacity'], ['plate','s_plate'],
+        ['driver','s_driver'], ['route','s_route'], ['pkgQty','s_pkgQty'],
+        ['weight','s_weight'], ['cubic','s_cubic'], ['baseFee','s_baseFee'],
+        ['extraPoint','s_extraPoint'], ['laborFee','s_laborFee'], ['overtimeFee','s_overtimeFee'],
+        ['usageHr','s_usageHr'], ['baseHr','s_baseHr'], ['total','s_total'], ['remark','s_remark']
+      ];
+      map.forEach(([src, dest]) => { $(dest).textContent = $(src).value || ''; });
+      $('s_date').textContent = humanDate($('date').value);
+      $('s_loadTime').textContent = $('loadTime').value;
+      $('s_unloadTime').textContent = $('unloadTime').value;
+      // Smooth scroll to sheet
+      document.getElementById('sheet').scrollIntoView({behavior:'smooth'});
+    }
+
+    function fillDemo(){
+      $('date').valueAsDate = new Date();
+      $('customer').value = '友穎文龍';
+      $('addr').value = '高雄市三民區○○路 123 號';
+      $('phone').value = '07-1234567';
+      $('vehType').value = '3.5噸';
+      $('capacity').value = '3.1';
+      $('plate').value = 'ABC-1234';
+      $('driver').value = '王小明(07)';
+      $('route').value = 'H-395 岡頂，1×4件，○○ 311才；另外 賀頂，5×件，3491kg，457才';
+      $('pkgQty').value = '板181 件';
+      $('weight').value = '3491';
+      $('cubic').value = '457';
+      $('baseFee').value = '5000';
+      $('extraPoint').value = '1 點 × 500';
+      $('laborFee').value = '';
+      $('overtimeFee').value = '';
+      $('usageHr').value = '';
+      $('baseHr').value = '';
+      $('remark').value = '';
+      $('total').value = '5500';
+      previewToSheet();
+    }
+
+    // Auto preview on input change
+    document.addEventListener('input', (e)=>{
+      const ids = ['company','hotline','date','customer','taxid','addr','phone','vehType','capacity','plate','driver','route','pkgQty','weight','cubic','baseFee','extraPoint','laborFee','overtimeFee','usageHr','baseHr','total','remark','loadTime','unloadTime'];
+      if(ids.includes(e.target.id)) previewToSheet();
+    });
+  </script>
+</body>
+</html>
