@@ -49,6 +49,7 @@
 <input type="file" id="excelFile" accept=".xlsx,.xls">
 <br>
 <button id="uploadBtn">Upload & Simpan ke Supabase</button>
+<button id="refreshBtn" style="background:#28a745;">🔄 Refresh (Clear Data)</button>
 
 <pre id="log"></pre>
 
@@ -76,36 +77,30 @@ document.getElementById("uploadBtn").addEventListener("click", () => {
 
     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
-const formattedData = jsonData.map((row, index) => {
-  // Hitung volume dari Excel jika ada, jika tidak gunakan rumus dari 長*寬*高
-  const volume = row["材積: (長*寬*高)/28317"] 
-                 ? parseFloat(row["材積: (長*寬*高)/28317"]) 
-                 : row["長*寬*高"] ? parseFloat(row["長*寬*高"]) / 28317 : 0;
+    const formattedData = jsonData.map((row, index) => {
+      const volume = row["材積: (長*寬*高)/28317"] 
+                     ? parseFloat(row["材積: (長*寬*高)/28317"]) 
+                     : row["長*寬*高"] ? parseFloat(row["長*寬*高"]) / 28317 : 0;
 
-  // Hitung CBM
-  const cbm = row["CBM:材積/35.315"] 
-              ? parseFloat(row["CBM:材積/35.315"]) 
-              : volume / 35.315;
+      const cbm = row["CBM:材積/35.315"] 
+                  ? parseFloat(row["CBM:材積/35.315"]) 
+                  : volume / 35.315;
 
-  return {
-    NO: row["NO"] || index + 1,   // Nomor urut dari Excel, kalau kosong pakai index+1
-    SIZE: row["SIZE"] || "",
-    "長*寬*高": row["長*寬*高"] || "",
-    材積: volume,
-    CBM: cbm,
-    箱數: row["箱數"] ? parseInt(row["箱數"]) : 0,
-    重量: row["重量"] ? parseFloat(row["重量"]) : 0
-  };
-});
-
-
-
+      return {
+        NO: row["NO"] || index + 1,
+        SIZE: row["SIZE"] || "",
+        "長*寬*高": row["長*寬*高"] || "",
+        材積: volume,
+        CBM: cbm,
+        箱數: row["箱數"] ? parseInt(row["箱數"]) : 0,
+        重量: row["重量"] ? parseFloat(row["重量"]) : 0
+      };
+    });
 
     document.getElementById("log").innerText =
       "📊 Data siap upload:\n" + JSON.stringify(formattedData, null, 2);
 
-    // Insert ke Supabase
-    const { data: inserted, error } = await supabase
+    const { error } = await supabase
       .from("plt_table")
       .insert(formattedData);
 
@@ -119,6 +114,18 @@ const formattedData = jsonData.map((row, index) => {
   };
 
   reader.readAsArrayBuffer(file);
+});
+
+// Tombol Refresh (hapus semua data di plt_table)
+document.getElementById("refreshBtn").addEventListener("click", async () => {
+  if (!confirm("⚠️ Yakin ingin menghapus semua data di plt_table?")) return;
+  const { error } = await supabase.from("plt_table").delete().neq("NO", 0);
+  if (error) {
+    alert("❌ Gagal hapus data: " + error.message);
+  } else {
+    alert("✅ Semua data berhasil dihapus dari plt_table!");
+    document.getElementById("log").innerText = "🗑️ Semua data sudah dihapus.";
+  }
 });
 </script>
 
