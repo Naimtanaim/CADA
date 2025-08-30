@@ -7,12 +7,12 @@
   body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; background:#f5f7fa; color:#333; }
   h2 { text-align:center; margin-bottom:20px; }
   .search-box { margin-bottom:20px; }
-  .search-box input { padding:6px; margin-right:6px; width:80px; }
-  .search-box button { padding:6px 12px; cursor:pointer; }
+  .search-box input { padding:10px; margin-right:6px; width:80px; }
+  .search-box button { padding:10px 20px; cursor:pointer; }
 
   /* Container untuk tabel scrollable */
   .table-container {
-    max-height: 500px; /* Tinggi tabel scrollable */
+    max-height: 670px; /* Tinggi tabel scrollable */
     overflow-y: auto;
     position: relative;
     margin-bottom: 20px;
@@ -29,7 +29,18 @@
   button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
   button.delete-btn:hover { background:#c0392b; }
 
-  .summary { display:flex; justify-content:space-between; background:#fff; padding:15px 25px; border-radius:12px; box-shadow:0 2px 6px rgba(0,0,0,0.1); margin-bottom:10px; }
+  .summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+  font-size: 25px;   /* <== ukuran teks diperbesar */
+  font-weight: bold; /* opsional biar lebih tebal */
+}
+
 
   /* Tombol Upload CSV di pojok kanan atas */
   .upload-csv { position:absolute; top:20px; right:20px; }
@@ -52,7 +63,7 @@
   }
   .btn-delete-all {
   position: absolute;
-  top:80px;
+  top:90px;
   right: 50px; /* geser sedikit ke kiri dari tombol Kembali */
   display: inline-flex;
   align-items: center;
@@ -78,6 +89,34 @@
   transform: translateY(0);
   box-shadow: 0 6px 10px rgba(0,0,0,0.2);
 }
+.btn-print-duplicate {
+  position: absolute;
+  top: 89px;
+  right: 250px; /* sesuaikan posisi */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-print-duplicate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-print-duplicate:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
 </style>
 </head>
 <body>
@@ -90,11 +129,12 @@
 
 <h2>栈板资料报表</h2>
 <button class="btn-delete-all">🗑 Hapus Semua</button>
+<button class="btn-print-duplicate">🖨 Print</button>
 
 <div class="search-box">
   <input type="number" id="startNo" placeholder="PLT 1">
   <input type="number" id="endNo" placeholder="PLT 2">
-  <button id="duplicateBtn">Tamba</button>
+  <button id="duplicateBtn">OK</button>
 </div>
 
 <div class="summary">
@@ -131,6 +171,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 const tbody = document.querySelector("#pltTable tbody");
 const tfootCbm = document.getElementById("tfootCbm");
