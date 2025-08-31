@@ -13,7 +13,3105 @@
   .summary { font-weight:bold; margin-top:15px; font-size:16px; }
   .print-btn { padding:10px 30px; background:#ff4b2b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:30px; }
   .print-btn:hover { background:#6a11cb; }
+  Anda bilang:
+buatkan tombol print untuk mencetak dari datasupabase cetak data masukyang ada di tabel plt_table_duplicate
+ChatGPT bilang:
+
+Oke! Kita bisa buat tombol Print di HTML yang ketika diklik akan mengambil data dari Supabase (tabel plt_table_duplicate) dan langsung menampilkannya di halaman print. Berikut contoh implementasinya menggunakan Supabase JS:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print Data Supabase</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+</head>
+<body>
+
+<button id="printBtn">Print Data</button>
+
+<script>
+// Inisialisasi Supabase
+const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById('printBtn').addEventListener('click', async () => {
+    try {
+        // Ambil data dari tabel plt_table_duplicate
+        let { data, error } = await supabase
+            .from('plt_table_duplicate')
+            .select('*');
+
+        if (error) {
+            alert('Error: ' + error.message);
+            return;
+        }
+
+        // Buat konten untuk dicetak
+        let printContent = '<h2>Data PLT Table Duplicate</h2>';
+        printContent += '<table border="1" cellpadding="5" cellspacing="0">';
+        printContent += '<tr>';
+        // Tambahkan header kolom
+        if(data.length > 0){
+            Object.keys(data[0]).forEach(key => {
+                printContent += `<th>${key}</th>`;
+            });
+            printContent += '</tr>';
+
+            // Tambahkan data baris
+            data.forEach(row => {
+                printContent += '<tr>';
+                Object.values(row).forEach(val => {
+                    printContent += `<td>${val}</td>`;
+                });
+                printContent += '</tr>';
+            });
+        } else {
+            printContent += '<tr><td colspan="100%">No data found</td></tr>';
+        }
+        printContent += '</table>';
+
+        // Buka window print
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Print Data</title></head><body>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+
+    } catch (err) {
+        console.error(err);
+        alert('Something went wrong!');
+    }
+});
+</script>
+
+</body>
+</html>
+
+
+✅ Fitur yang ada:
+
+Mengambil semua data dari tabel plt_table_duplicate.
+
+Membuat tabel HTML secara dinamis.
+
+Membuka jendela print browser dengan data siap dicetak.
+
+Kalau mau, saya bisa buatkan versi lebih modern yang langsung menggunakan tampilan grid ala POS, bukan tabel HTML biasa, supaya lebih rapi saat dicetak.
+
+Apakah mau saya buat versi modernnya juga?
+
+Anda bilang:
+buat versi modernnya juga
+ChatGPT bilang:
+
+Oke! Kita bisa buat versi modern dan rapi untuk print data dari Supabase dengan tampilan grid ala POS, responsif dan mudah dibaca, bukan tabel HTML biasa. Berikut contohnya:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print Data Modern</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<style>
+/* Gaya modern untuk tampilan cetak */
+.print-container {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.print-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.grid-item {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 3px rgba(0,0,0,0.2);
+}
+
+.grid-item p {
+    margin: 5px 0;
+    word-break: break-word;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+</style>
+</head>
+<body>
+
+<button id="printBtn">Print Data Modern</button>
+
+<div id="printArea" style="display:none;"></div>
+
+<script>
+// Inisialisasi Supabase
+const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById('printBtn').addEventListener('click', async () => {
+    try {
+        let { data, error } = await supabase
+            .from('plt_table_duplicate')
+            .select('*');
+
+        if (error) {
+            alert('Error: ' + error.message);
+            return;
+        }
+
+        const container = document.getElementById('printArea');
+        container.innerHTML = ''; // Reset konten
+
+        let html = `<div class="print-container">
+                        <h2>Data PLT Table Duplicate</h2>
+                        <div class="grid">`;
+
+        if(data.length > 0){
+            data.forEach((row, index) => {
+                html += `<div class="grid-item">
+                            <strong>Item ${index + 1}</strong><br>`;
+                Object.entries(row).forEach(([key, value]) => {
+                    html += `<p><strong>${key}:</strong> ${value}</p>`;
+                });
+                html += `</div>`;
+            });
+        } else {
+            html += `<p>No data found</p>`;
+        }
+
+        html += `</div></div>`;
+        container.innerHTML = html;
+        container.style.display = 'block';
+
+        window.print();
+
+    } catch (err) {
+        console.error(err);
+        alert('Something went wrong!');
+    }
+});
+</script>
+
+</body>
+</html>
+
+
+✅ Fitur versi modern:
+
+Grid layout yang rapi, setiap record jadi “kartu” terpisah.
+
+Responsif saat di-print, otomatis menyesuaikan lebar halaman.
+
+Modern style dengan shadow, border-radius, dan jarak antar item.
+
+Print area terbatas hanya menampilkan data, bukan tombol atau elemen lain.
+
+Kalau mau, saya juga bisa buat versi print langsung ke printer thermal ala kasir POS, seperti yang biasa dipakai di toko, tanpa menampilkan jendela print browser.
+
+Apakah mau saya buat versi thermal POS itu juga?
+
+Anda bilang:
+tidak bisa mengeprin
+ChatGPT bilang:
+
+Ah, kalau tombol “Print” di browser tidak berhasil, biasanya ada beberapa hal yang perlu diperhatikan: Supabase async fetch, elemen print area, atau konten belum benar-benar ter-render saat window.print() dipanggil.
+
+Mari kita buat versi lebih stabil agar benar-benar bisa dicetak:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print Data Modern</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<style>
+.print-container {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.print-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.grid-item {
+    background: #f4f4f4;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0px 0px 3px rgba(0,0,0,0.2);
+}
+
+.grid-item p {
+    margin: 5px 0;
+    word-break: break-word;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+}
+</style>
+</head>
+<body>
+
+<button id="printBtn">Print Data Modern</button>
+
+<div id="printArea" style="display:none;"></div>
+
+<script>
+const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+document.getElementById('printBtn').addEventListener('click', async () => {
+    try {
+        let { data, error } = await supabase
+            .from('plt_table_duplicate')
+            .select('*');
+
+        if (error) {
+            alert('Error: ' + error.message);
+            return;
+        }
+
+        const container = document.getElementById('printArea');
+        container.innerHTML = ''; // Reset konten
+
+        let html = `<div class="print-container">
+                        <h2>Data PLT Table Duplicate</h2>
+                        <div class="grid">`;
+
+        if(data.length > 0){
+            data.forEach((row, index) => {
+                html += `<div class="grid-item">
+                            <strong>Item ${index + 1}</strong><br>`;
+                Object.entries(row).forEach(([key, value]) => {
+                    html += `<p><strong>${key}:</strong> ${value}</p>`;
+                });
+                html += `</div>`;
+            });
+        } else {
+            html += `<p>No data found</p>`;
+        }
+
+        html += `</div></div>`;
+        container.innerHTML = html;
+        container.style.display = 'block';
+
+        // Tunggu sebentar agar DOM ter-render sebelum print
+        setTimeout(() => {
+            window.print();
+            container.style.display = 'none';
+        }, 300);
+
+    } catch (err) {
+        console.error(err);
+        alert('Something went wrong!');
+    }
+});
+</script>
+
+</body>
+</html>
+
+
+✅ Perbaikan utama:
+
+Menunggu 300ms sebelum window.print() agar DOM sepenuhnya ter-render.
+
+display: none hanya diaktifkan kembali setelah print selesai.
+
+Pastikan Supabase URL dan ANON KEY benar.
+
+Kalau masih tidak mau ngeprint, kemungkinan kamu ingin print langsung ke printer termal POS seperti di kasir. Itu tidak pakai window.print() tapi pakai JavaScript ESC/POS library.
+
+Apakah mau saya buatkan versi untuk printer thermal POS juga?
+
+Anda bilang:
+tambkan printer seluruh body yAng ada di tabel <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate & Report</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; background:#f5f7fa; color:#333; }
+  h2 { text-align:center; margin-bottom:20px; }
+  .search-box { margin-bottom:20px; }
+  .search-box input { padding:10px; margin-right:6px; width:80px; }
+  .search-box button { padding:10px 20px; cursor:pointer; }
+
+  /* Container untuk tabel scrollable */
+  .table-container {
+    max-height: 490px; /* Tinggi tabel scrollable */
+    overflow-y: auto;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  thead { background:#4a90e2; color:#fff; }
+  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; } /* Sticky header */
+  tbody td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+  tbody tr:hover { background:#f1f7ff; }
+  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; } /* Sticky footer */
+  tfoot td { padding:12px; text-align:center; font-weight:bold; }
+
+  button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  button.delete-btn:hover { background:#c0392b; }
+
+  .summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+  font-size: 25px;   /* <== ukuran teks diperbesar */
+  font-weight: bold; /* opsional biar lebih tebal */
+}
+
+
+  /* Tombol Upload CSV di pojok kanan atas */
+  .upload-csv { position:absolute; top:20px; right:20px; }
+  .upload-csv button { background:#28a745; color:white; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer; }
+  .upload-csv button:hover { background:#1e7e34; }
+
+  /* Peringatan berat */
+  #weightWarning {
+    display: none;
+    background-color: #e74c3c;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px auto;
+    width: 80%;
+    box-sizing: border-box;
+    font-size: 20px;
+  }
+  .btn-delete-all {
+  position: absolute;
+  top:90px;
+  right: 50px; /* geser sedikit ke kiri dari tombol Kembali */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%);
+  color: white;
+  font-size: 15px;
+  font-weight: 300;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-delete-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-delete-all:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+.btn-print-duplicate {
+  position: absolute;
+  top: 89px;
+  right: 200px; /* sesuaikan posisi */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-print-duplicate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-print-duplicate:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+<body>
+
+<div class="upload-csv">
+  <a href="inputpl.html">
+    <button>Upload CSV</button>
+  </a>
+</div>
+
+<h2>栈板资料报表</h2>
+<button class="btn-delete-all">Hapus Semua</button>
+<button class="btn-print-duplicate">simpan</button>
+
+<div class="search-box">
+  <input type="number" id="startNo" placeholder="PLT 1">
+  <input type="number" id="endNo" placeholder="PLT 2">
+  <button id="duplicateBtn">OK</button>
+</div>
+
+<div class="summary">
+  <div>Total (材積): <span id="totalCbm">0</span></div>
+  <div>Total Box (箱數): <span id="totalBox">0</span></div>
+  <div>Total Berat(重量): <span id="totalWeight">0</span> kg</div>
+</div>
+
+<!-- Peringatan berat -->
+<div id="weightWarning">⚠️ Total总重量超过4000kg!</div>
+
+<div class="table-container">
+  <table id="pltTable">
+    <thead>
+      <tr>
+        <th>PLT</th>
+        <th>SIZE</th>
+        <th>長*寬*高</th>
+        <th>材積</th>
+        <th>CBM</th>
+        <th>箱數</th>
+        <th>重量</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+const tbody = document.querySelector("#pltTable tbody");
+const tfootCbm = document.getElementById("tfootCbm");
+const tfootBox = document.getElementById("tfootBox");
+const tfootWeight = document.getElementById("tfootWeight");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    ;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total & tampilkan di footer
+function calculateTotals() {
+    const rows = document.querySelectorAll("#pltTable tbody tr");
+    let totalCbm = 0, totalBox = 0, totalWeight = 0;
+
+    rows.forEach(row => {
+      totalCbm += parseFloat(row.cells[3].innerText) || 0;
+      totalBox += parseFloat(row.cells[5].innerText) || 0;
+      let weight = parseFloat(row.cells[6].innerText) || 0;
+      totalWeight += weight + 25; // Tambahkan berat + 25kg per baris
+    });
+ // tfootCbm.innerText = totalCbm.toFixed(2);
+  //tfootBox.innerText = totalBox;
+ // tfootWeight.innerText = totalWeight;
+
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Tombol hapus per baris
+function addDeleteEvents(){
+  document.querySelectorAll(".delete-btn").forEach(btn=>{
+    btn.onclick = async function(){
+      const tr = this.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ console.error(error); alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    }
+  });
+}
+document.querySelector('.btn-delete-all').addEventListener('click', async () => {
+  if (!confirm("⚠️ Apakah Anda yakin ingin menghapus semua data PLT?")) return;
+
+  try {
+    // Hapus semua baris
+    const { error } = await supabase
+      .from('plt_table_duplicate')
+      .delete()
+      .neq('NO', 0); // pakai NO karena kolom NO selalu ada
+
+    if (error) {
+      alert("❌ Gagal menghapus data: " + error.message);
+    } else {
+      alert("✅ Semua data berhasil dihapus!");
+      tbody.innerHTML = ''; // bersihkan tabel di halaman
+      calculateTotals(); // reset total
+    }
+  } catch (err) {
+    alert("❌ Terjadi error: " + err.message);
+  }
+});
+
+
+// Duplicate data sesuai range NO
+document.getElementById("duplicateBtn").onclick = async function() {
+  const startNo = parseInt(document.getElementById("startNo").value);
+  const endNo = parseInt(document.getElementById("endNo").value);
+  if(isNaN(startNo) || isNaN(endNo)){ alert("Isi nomor awal & akhir!"); return; }
+
+  const { data, error } = await supabase.from('plt_table')
+    .select('*')
+    .gte('NO', startNo)
+    .lte('NO', endNo);
+
+  if(error){ console.error(error); alert("Gagal ambil data"); return; }
+  if(!data.length){ alert("Data tidak ditemukan"); return; }
+
+  // Insert ke duplicate
+  const { error: insertError } = await supabase.from('plt_table_duplicate').insert(data);
+  if(insertError){ console.error(insertError); alert("Gagal duplicate"); return; }
+
+  // Clear input
+  document.getElementById("startNo").value = '';
+  document.getElementById("endNo").value = '';
+
+  loadData(); // refresh tabel
+}
+
+// Load awal
+loadData();
+</script>
+</body>
+</html>
+ChatGPT bilang:
+
+Oke! Kita bisa menambahkan fungsi print seluruh body tabel (plt_table_duplicate) agar saat tombol “simpan” diklik, semua data yang tampil di halaman tercetak dengan layout rapi. Berikut cara menambahkan fitur print modern ke kode yang sudah ada:
+
+Tambahkan script berikut di bagian <script type="module"> di bawah loadData() dan event tombol:
+
+// Tombol Print Duplicate
+document.querySelector('.btn-print-duplicate').addEventListener('click', () => {
+    // Ambil konten tabel
+    const tableContainer = document.querySelector('.table-container').innerHTML;
+    const totalCbm = document.getElementById("totalCbm").innerText;
+    const totalBox = document.getElementById("totalBox").innerText;
+    const totalWeight = document.getElementById("totalWeight").innerText;
+
+    // Buat konten untuk dicetak
+    const printContent = `
+        <html>
+        <head>
+            <title>Print PLT Duplicate</title>
+            <style>
+                body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; color:#333; }
+                h2 { text-align:center; margin-bottom:20px; }
+                table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+                thead { background:#4a90e2; color:#fff; }
+                th, td { padding:10px; text-align:center; border:1px solid #ccc; }
+                tbody tr:nth-child(even){ background:#f9f9f9; }
+                .summary { font-weight:bold; margin-top:10px; }
+            </style>
+        </head>
+        <body>
+            <h2>栈板资料报表</h2>
+            ${tableContainer}
+            <div class="summary">
+                Total CBM: ${totalCbm} <br>
+                Total Box: ${totalBox} <br>
+                Total Berat: ${totalWeight} kg
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Buka jendela print
+    const printWindow = window.open('', '', 'width=900,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+});
+
+
+✅ Fitur tambahan ini:
+
+Mengambil seluruh tabel dari plt_table_duplicate seperti yang terlihat di halaman.
+
+Menambahkan summary total CBM, Box, dan Berat di bagian bawah.
+
+Membuka jendela print baru agar layout rapi dan siap dicetak.
+
+Tetap menggunakan style modern yang serupa dengan tampilan halaman.
+
+Kalau mau, saya bisa buatkan versi print langsung ala POS thermal (tanpa jendela print browser) supaya bisa dicetak ke printer kasir otomatis.
+
+Apakah mau saya buatkan versi POS thermal itu juga?
+
+Anda bilang:
+tolong tambakan di sinih fungsi itu <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate & Report</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; background:#f5f7fa; color:#333; }
+  h2 { text-align:center; margin-bottom:20px; }
+  .search-box { margin-bottom:20px; }
+  .search-box input { padding:10px; margin-right:6px; width:80px; }
+  .search-box button { padding:10px 20px; cursor:pointer; }
+
+  /* Container untuk tabel scrollable */
+  .table-container {
+    max-height: 490px; /* Tinggi tabel scrollable */
+    overflow-y: auto;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  thead { background:#4a90e2; color:#fff; }
+  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; } /* Sticky header */
+  tbody td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+  tbody tr:hover { background:#f1f7ff; }
+  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; } /* Sticky footer */
+  tfoot td { padding:12px; text-align:center; font-weight:bold; }
+
+  button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  button.delete-btn:hover { background:#c0392b; }
+
+  .summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+  font-size: 25px;   /* <== ukuran teks diperbesar */
+  font-weight: bold; /* opsional biar lebih tebal */
+}
+
+
+  /* Tombol Upload CSV di pojok kanan atas */
+  .upload-csv { position:absolute; top:20px; right:20px; }
+  .upload-csv button { background:#28a745; color:white; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer; }
+  .upload-csv button:hover { background:#1e7e34; }
+
+  /* Peringatan berat */
+  #weightWarning {
+    display: none;
+    background-color: #e74c3c;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px auto;
+    width: 80%;
+    box-sizing: border-box;
+    font-size: 20px;
+  }
+  .btn-delete-all {
+  position: absolute;
+  top:90px;
+  right: 50px; /* geser sedikit ke kiri dari tombol Kembali */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%);
+  color: white;
+  font-size: 15px;
+  font-weight: 300;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-delete-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-delete-all:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+.btn-print-duplicate {
+  position: absolute;
+  top: 89px;
+  right: 200px; /* sesuaikan posisi */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-print-duplicate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-print-duplicate:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+<body>
+
+<div class="upload-csv">
+  <a href="inputpl.html">
+    <button>Upload CSV</button>
+  </a>
+</div>
+
+<h2>栈板资料报表</h2>
+<button class="btn-delete-all">Hapus Semua</button>
+<button class="btn-print-duplicate">simpan</button>
+
+<div class="search-box">
+  <input type="number" id="startNo" placeholder="PLT 1">
+  <input type="number" id="endNo" placeholder="PLT 2">
+  <button id="duplicateBtn">OK</button>
+</div>
+
+<div class="summary">
+  <div>Total (材積): <span id="totalCbm">0</span></div>
+  <div>Total Box (箱數): <span id="totalBox">0</span></div>
+  <div>Total Berat(重量): <span id="totalWeight">0</span> kg</div>
+</div>
+
+<!-- Peringatan berat -->
+<div id="weightWarning">⚠️ Total总重量超过4000kg!</div>
+
+<div class="table-container">
+  <table id="pltTable">
+    <thead>
+      <tr>
+        <th>PLT</th>
+        <th>SIZE</th>
+        <th>長*寬*高</th>
+        <th>材積</th>
+        <th>CBM</th>
+        <th>箱數</th>
+        <th>重量</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+const tbody = document.querySelector("#pltTable tbody");
+const tfootCbm = document.getElementById("tfootCbm");
+const tfootBox = document.getElementById("tfootBox");
+const tfootWeight = document.getElementById("tfootWeight");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    ;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total & tampilkan di footer
+function calculateTotals() {
+    const rows = document.querySelectorAll("#pltTable tbody tr");
+    let totalCbm = 0, totalBox = 0, totalWeight = 0;
+
+    rows.forEach(row => {
+      totalCbm += parseFloat(row.cells[3].innerText) || 0;
+      totalBox += parseFloat(row.cells[5].innerText) || 0;
+      let weight = parseFloat(row.cells[6].innerText) || 0;
+      totalWeight += weight + 25; // Tambahkan berat + 25kg per baris
+    });
+ // tfootCbm.innerText = totalCbm.toFixed(2);
+  //tfootBox.innerText = totalBox;
+ // tfootWeight.innerText = totalWeight;
+
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Tombol hapus per baris
+function addDeleteEvents(){
+  document.querySelectorAll(".delete-btn").forEach(btn=>{
+    btn.onclick = async function(){
+      const tr = this.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ console.error(error); alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    }
+  });
+}
+document.querySelector('.btn-delete-all').addEventListener('click', async () => {
+  if (!confirm("⚠️ Apakah Anda yakin ingin menghapus semua data PLT?")) return;
+
+  try {
+    // Hapus semua baris
+    const { error } = await supabase
+      .from('plt_table_duplicate')
+      .delete()
+      .neq('NO', 0); // pakai NO karena kolom NO selalu ada
+
+    if (error) {
+      alert("❌ Gagal menghapus data: " + error.message);
+    } else {
+      alert("✅ Semua data berhasil dihapus!");
+      tbody.innerHTML = ''; // bersihkan tabel di halaman
+      calculateTotals(); // reset total
+    }
+  } catch (err) {
+    alert("❌ Terjadi error: " + err.message);
+  }
+});
+
+
+// Duplicate data sesuai range NO
+document.getElementById("duplicateBtn").onclick = async function() {
+  const startNo = parseInt(document.getElementById("startNo").value);
+  const endNo = parseInt(document.getElementById("endNo").value);
+  if(isNaN(startNo) || isNaN(endNo)){ alert("Isi nomor awal & akhir!"); return; }
+
+  const { data, error } = await supabase.from('plt_table')
+    .select('*')
+    .gte('NO', startNo)
+    .lte('NO', endNo);
+
+  if(error){ console.error(error); alert("Gagal ambil data"); return; }
+  if(!data.length){ alert("Data tidak ditemukan"); return; }
+
+  // Insert ke duplicate
+  const { error: insertError } = await supabase.from('plt_table_duplicate').insert(data);
+  if(insertError){ console.error(insertError); alert("Gagal duplicate"); return; }
+
+  // Clear input
+  document.getElementById("startNo").value = '';
+  document.getElementById("endNo").value = '';
+
+  loadData(); // refresh tabel
+}
+
+// Load awal
+loadData();
+</script>
+</body>
+</html>
+ChatGPT bilang:
+
+Oke! Saya akan menambahkan fungsi print seluruh body tabel ke kode yang sudah ada, sehingga ketika tombol .btn-print-duplicate diklik, semua data di plt_table_duplicate akan tercetak rapi beserta summary.
+
+Tambahkan kode berikut di dalam <script type="module"> di bawah loadData() dan event tombol lain:
+
+// Fungsi print seluruh tabel duplicate
+document.querySelector('.btn-print-duplicate').addEventListener('click', () => {
+    // Ambil konten tabel dan summary
+    const tableHtml = document.querySelector('.table-container').innerHTML;
+    const totalCbm = document.getElementById("totalCbm").innerText;
+    const totalBox = document.getElementById("totalBox").innerText;
+    const totalWeight = document.getElementById("totalWeight").innerText;
+
+    // Buat konten HTML untuk print
+    const printContent = `
+        <html>
+        <head>
+            <title>Print PLT Duplicate</title>
+            <style>
+                body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:20px; color:#333; }
+                h2 { text-align:center; margin-bottom:20px; }
+                table { width:100%; border-collapse:collapse; margin-bottom:20px; }
+                thead { background:#4a90e2; color:#fff; }
+                th, td { padding:10px; text-align:center; border:1px solid #ccc; }
+                tbody tr:nth-child(even){ background:#f9f9f9; }
+                .summary { font-weight:bold; margin-top:10px; }
+            </style>
+        </head>
+        <body>
+            <h2>栈板资料报表</h2>
+            ${tableHtml}
+            <div class="summary">
+                Total CBM: ${totalCbm} <br>
+                Total Box: ${totalBox} <br>
+                Total Berat: ${totalWeight} kg
+            </div>
+        </body>
+        </html>
+    `;
+
+    // Buka window print baru
+    const printWindow = window.open('', '', 'width=900,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+});
+
+
+✅ Fitur ini akan:
+
+Mengambil seluruh tabel beserta header dan data.
+
+Menampilkan summary total CBM, Box, dan Berat di bagian bawah.
+
+Membuka jendela print yang siap dicetak tanpa mengubah halaman utama.
+
+Setelah menambahkan fungsi ini, tombol “simpan” akan otomatis menampilkan print preview seluruh tabel plt_table_duplicate dengan layout rapi.
+
+Kalau mau, saya juga bisa buatkan versi print langsung ke printer thermal POS tanpa window print.
+Apakah mau dibuatkan versi thermal POS juga?
+
+Anda bilang:
+buatkan cetak print ini // Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    ;
+    tbody.appendChild(tr);
+  });
+ChatGPT bilang:
+
+Oke! Kita bisa menambahkan fungsi cetak/print langsung ke dalam loadData() atau sebagai fungsi terpisah, agar semua data yang ditampilkan di tabel plt_table_duplicate bisa dicetak. Berikut versi lengkapnya:
+
+// Fungsi cetak tabel duplicate
+function printDuplicateTable() {
+    // Ambil seluruh isi tabel
+    const tableHtml = document.querySelector('.table-container').innerHTML;
+    const totalCbm = document.getElementById("totalCbm").innerText;
+    const totalBox = document.getElementById("totalBox").innerText;
+    const totalWeight = document.getElementById("totalWeight").innerText;
+
+    const printContent = `
+        <html>
+        <head>
+            <title>Print PLT Duplicate</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin:20px; }
+                h2 { text-align:center; margin-bottom:20px; }
+                table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+                th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+                thead { background:#4a90e2; color:#fff; }
+                tbody tr:nth-child(even) { background:#f9f9f9; }
+                .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+            </style>
+        </head>
+        <body>
+            <h2>栈板资料报表</h2>
+            ${tableHtml}
+            <div class="summary">
+                Total CBM: ${totalCbm} <br>
+                Total Box: ${totalBox} <br>
+                Total Berat: ${totalWeight} kg
+            </div>
+        </body>
+        </html>
+    `;
+
+    const printWindow = window.open('', '', 'width=900,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+// Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Contoh: tombol print
+document.querySelector('.btn-print-duplicate').addEventListener('click', printDuplicateTable);
+
+
+✅ Penjelasan:
+
+Fungsi printDuplicateTable() mengambil seluruh tabel dan summary.
+
+Membuka jendela print baru agar tidak mengubah halaman utama.
+
+Tombol .btn-print-duplicate memanggil fungsi ini saat diklik.
+
+Kalau mau, saya bisa buat versi lebih modern ala grid POS, sehingga saat dicetak tampilannya lebih rapi dan mobile-friendly, bukan tabel HTML biasa.
+
+Apakah mau dibuatkan versi modern itu juga?
+
+Anda bilang:
+tolontg rapikan <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate & Report</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; background:#f5f7fa; color:#333; }
+  h2 { text-align:center; margin-bottom:20px; }
+  .search-box { margin-bottom:20px; }
+  .search-box input { padding:10px; margin-right:6px; width:80px; }
+  .search-box button { padding:10px 20px; cursor:pointer; }
+
+  /* Container untuk tabel scrollable */
+  .table-container {
+    max-height: 490px; /* Tinggi tabel scrollable */
+    overflow-y: auto;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  thead { background:#4a90e2; color:#fff; }
+  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; } /* Sticky header */
+  tbody td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+  tbody tr:hover { background:#f1f7ff; }
+  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; } /* Sticky footer */
+  tfoot td { padding:12px; text-align:center; font-weight:bold; }
+
+  button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  button.delete-btn:hover { background:#c0392b; }
+
+  .summary {
+  display: flex;
+  justify-content: space-between;
+  background: #fff;
+  padding: 15px 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+  font-size: 25px;   /* <== ukuran teks diperbesar */
+  font-weight: bold; /* opsional biar lebih tebal */
+}
+
+
+  /* Tombol Upload CSV di pojok kanan atas */
+  .upload-csv { position:absolute; top:20px; right:20px; }
+  .upload-csv button { background:#28a745; color:white; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer; }
+  .upload-csv button:hover { background:#1e7e34; }
+
+  /* Peringatan berat */
+  #weightWarning {
+    display: none;
+    background-color: #e74c3c;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px auto;
+    width: 80%;
+    box-sizing: border-box;
+    font-size: 20px;
+  }
+  .btn-delete-all {
+  position: absolute;
+  top:90px;
+  right: 50px; /* geser sedikit ke kiri dari tombol Kembali */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%);
+  color: white;
+  font-size: 15px;
+  font-weight: 300;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-delete-all:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-delete-all:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+.btn-print-duplicate {
+  position: absolute;
+  top: 89px;
+  right: 200px; /* sesuaikan posisi */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+  color: white;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.btn-print-duplicate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
+}
+
+.btn-print-duplicate:active {
+  transform: translateY(0);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+<body>
+
+<div class="upload-csv">
+  <a href="inputpl.html">
+    <button>Upload CSV</button>
+  </a>
+</div>
+
+<h2>栈板资料报表</h2>
+<button class="btn-delete-all">Hapus Semua</button>
+<button class="btn-print-duplicate">simpan</button>
+
+<div class="search-box">
+  <input type="number" id="startNo" placeholder="PLT 1">
+  <input type="number" id="endNo" placeholder="PLT 2">
+  <button id="duplicateBtn">OK</button>
+</div>
+
+<div class="summary">
+  <div>Total (材積): <span id="totalCbm">0</span></div>
+  <div>Total Box (箱數): <span id="totalBox">0</span></div>
+  <div>Total Berat(重量): <span id="totalWeight">0</span> kg</div>
+</div>
+
+<!-- Peringatan berat -->
+<div id="weightWarning">⚠️ Total总重量超过4000kg!</div>
+
+<div class="table-container">
+  <table id="pltTable">
+    <thead>
+      <tr>
+        <th>PLT</th>
+        <th>SIZE</th>
+        <th>長*寬*高</th>
+        <th>材積</th>
+        <th>CBM</th>
+        <th>箱數</th>
+        <th>重量</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+    </tfoot>
+  </table>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+
+const tbody = document.querySelector("#pltTable tbody");
+const tfootCbm = document.getElementById("tfootCbm");
+const tfootBox = document.getElementById("tfootBox");
+const tfootWeight = document.getElementById("tfootWeight");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    ;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total & tampilkan di footer
+function calculateTotals() {
+    const rows = document.querySelectorAll("#pltTable tbody tr");
+    let totalCbm = 0, totalBox = 0, totalWeight = 0;
+
+    rows.forEach(row => {
+      totalCbm += parseFloat(row.cells[3].innerText) || 0;
+      totalBox += parseFloat(row.cells[5].innerText) || 0;
+      let weight = parseFloat(row.cells[6].innerText) || 0;
+      totalWeight += weight + 25; // Tambahkan berat + 25kg per baris
+    });
+ // tfootCbm.innerText = totalCbm.toFixed(2);
+  //tfootBox.innerText = totalBox;
+ // tfootWeight.innerText = totalWeight;
+
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Tombol hapus per baris
+function addDeleteEvents(){
+  document.querySelectorAll(".delete-btn").forEach(btn=>{
+    btn.onclick = async function(){
+      const tr = this.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ console.error(error); alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    }
+  });
+}
+
+// Fungsi cetak tabel duplicate
+function printDuplicateTable() {
+    // Ambil seluruh isi tabel
+    const tableHtml = document.querySelector('.table-container').innerHTML;
+    const totalCbm = document.getElementById("totalCbm").innerText;
+    const totalBox = document.getElementById("totalBox").innerText;
+    const totalWeight = document.getElementById("totalWeight").innerText;
+
+    const printContent = 
+        <html>
+        <head>
+            <title>Print PLT Duplicate</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin:20px; }
+                h2 { text-align:center; margin-bottom:20px; }
+                table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+                th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+                thead { background:#4a90e2; color:#fff; }
+                tbody tr:nth-child(even) { background:#f9f9f9; }
+                .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+            </style>
+        </head>
+        <body>
+            <h2>栈板资料报表</h2>
+            ${tableHtml}
+            <div class="summary">
+                Total CBM: ${totalCbm} <br>
+                Total Box: ${totalBox} <br>
+                Total Berat: ${totalWeight} kg
+            </div>
+        </body>
+        </html>
+    ;
+
+    const printWindow = window.open('', '', 'width=900,height=600');
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+// Load data dari duplicate table
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    ;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Contoh: tombol print
+document.querySelector('.btn-print-duplicate').addEventListener('click', printDuplicateTable);
+
+
+document.querySelector('.btn-delete-all').addEventListener('click', async () => {
+  if (!confirm("⚠️ Apakah Anda yakin ingin menghapus semua data PLT?")) return;
+
+  try {
+    // Hapus semua baris
+    const { error } = await supabase
+      .from('plt_table_duplicate')
+      .delete()
+      .neq('NO', 0); // pakai NO karena kolom NO selalu ada
+
+    if (error) {
+      alert("❌ Gagal menghapus data: " + error.message);
+    } else {
+      alert("✅ Semua data berhasil dihapus!");
+      tbody.innerHTML = ''; // bersihkan tabel di halaman
+      calculateTotals(); // reset total
+    }
+  } catch (err) {
+    alert("❌ Terjadi error: " + err.message);
+  }
+});
+
+
+// Duplicate data sesuai range NO
+document.getElementById("duplicateBtn").onclick = async function() {
+  const startNo = parseInt(document.getElementById("startNo").value);
+  const endNo = parseInt(document.getElementById("endNo").value);
+  if(isNaN(startNo) || isNaN(endNo)){ alert("Isi nomor awal & akhir!"); return; }
+
+  const { data, error } = await supabase.from('plt_table')
+    .select('*')
+    .gte('NO', startNo)
+    .lte('NO', endNo);
+
+  if(error){ console.error(error); alert("Gagal ambil data"); return; }
+  if(!data.length){ alert("Data tidak ditemukan"); return; }
+
+  // Insert ke duplicate
+  const { error: insertError } = await supabase.from('plt_table_duplicate').insert(data);
+  if(insertError){ console.error(insertError); alert("Gagal duplicate"); return; }
+
+  // Clear input
+  document.getElementById("startNo").value = '';
+  document.getElementById("endNo").value = '';
+
+  loadData(); // refresh tabel
+}
+
+
+// Load awal
+loadData();
+
+</script>
+</body>
+</html>
+ChatGPT bilang:
+
+Tentu! Saya sudah merapikan dan membersihkan duplikasi kode di HTML & JavaScript Anda, membuatnya lebih rapi, ringkas, dan mudah dibaca. Berikut versi yang sudah diperbaiki:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate & Report</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; margin:30px; background:#f5f7fa; color:#333; }
+  h2 { text-align:center; margin-bottom:20px; }
+  .search-box { margin-bottom:20px; }
+  .search-box input { padding:10px; margin-right:6px; width:80px; }
+  .search-box button { padding:10px 20px; cursor:pointer; }
+
+  .table-container {
+    max-height: 490px;
+    overflow-y: auto;
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  thead { background:#4a90e2; color:#fff; }
+  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; }
+  tbody td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+  tbody tr:hover { background:#f1f7ff; }
+  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; }
+  tfoot td { padding:12px; text-align:center; font-weight:bold; }
+
+  button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
+  button.delete-btn:hover { background:#c0392b; }
+
+  .summary {
+    display: flex;
+    justify-content: space-between;
+    background: #fff;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    font-size: 25px;
+    font-weight: bold;
+  }
+
+  .upload-csv { position:absolute; top:20px; right:20px; }
+  .upload-csv button { background:#28a745; color:white; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer; }
+  .upload-csv button:hover { background:#1e7e34; }
+
+  #weightWarning {
+    display: none;
+    background-color: #e74c3c;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px auto;
+    width: 80%;
+    font-size: 20px;
+  }
+
+  .btn-delete-all, .btn-print-duplicate {
+    position: absolute;
+    top: 90px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+
+  .btn-delete-all { right: 50px; background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%); font-size: 15px; }
+  .btn-delete-all:hover { transform: translateY(-2px); box-shadow: 0 1px 20px rgba(0,0,0,0.3); }
+  .btn-delete-all:active { transform: translateY(0); box-shadow: 0 6px 10px rgba(0,0,0,0.2); }
+
+  .btn-print-duplicate { right: 200px; background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); font-size:16px; font-weight:500; }
+  .btn-print-duplicate:hover { transform: translateY(-2px); box-shadow: 0 1px 20px rgba(0,0,0,0.3); }
+  .btn-print-duplicate:active { transform: translateY(0); box-shadow: 0 6px 10px rgba(0,0,0,0.2); }
+</style>
+</head>
+<body>
+
+<div class="upload-csv">
+  <a href="inputpl.html"><button>Upload CSV</button></a>
+</div>
+
+<h2>栈板资料报表</h2>
+<button class="btn-delete-all">Hapus Semua</button>
+<button class="btn-print-duplicate">Simpan</button>
+
+<div class="search-box">
+  <input type="number" id="startNo" placeholder="PLT 1">
+  <input type="number" id="endNo" placeholder="PLT 2">
+  <button id="duplicateBtn">OK</button>
+</div>
+
+<div class="summary">
+  <div>Total (材積): <span id="totalCbm">0</span></div>
+  <div>Total Box (箱數): <span id="totalBox">0</span></div>
+  <div>Total Berat(重量): <span id="totalWeight">0</span> kg</div>
+</div>
+
+<div id="weightWarning">⚠️ Total总重量超过4000kg!</div>
+
+<div class="table-container">
+  <table id="pltTable">
+    <thead>
+      <tr>
+        <th>PLT</th>
+        <th>SIZE</th>
+        <th>長*寬*高</th>
+        <th>材積</th>
+        <th>CBM</th>
+        <th>箱數</th>
+        <th>重量</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const tbody = document.querySelector("#pltTable tbody");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total
+function calculateTotals() {
+  let totalCbm = 0, totalBox = 0, totalWeight = 0;
+  tbody.querySelectorAll("tr").forEach(row => {
+    totalCbm += parseFloat(row.cells[3].innerText) || 0;
+    totalBox += parseFloat(row.cells[5].innerText) || 0;
+    totalWeight += (parseFloat(row.cells[6].innerText) || 0) + 25;
+  });
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Hapus per baris
+function addDeleteEvents(){
+  tbody.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const tr = btn.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    };
+  });
+}
+
+// Hapus semua
+document.querySelector('.btn-delete-all').addEventListener('click', async () => {
+  if (!confirm("⚠️ Hapus semua data PLT?")) return;
+  const { error } = await supabase.from('plt_table_duplicate').delete().neq('NO', 0);
+  if(error){ alert("Gagal hapus"); return; }
+  tbody.innerHTML = '';
+  calculateTotals();
+});
+
+// Duplicate data sesuai range NO
+document.getElementById("duplicateBtn").onclick = async () => {
+  const startNo = parseInt(document.getElementById("startNo").value);
+  const endNo = parseInt(document.getElementById("endNo").value);
+  if(isNaN(startNo) || isNaN(endNo)){ alert("Isi nomor awal & akhir!"); return; }
+
+  const { data, error } = await supabase.from('plt_table')
+    .select('*').gte('NO', startNo).lte('NO', endNo);
+
+  if(error || !data.length){ alert("Gagal ambil data"); return; }
+
+  await supabase.from('plt_table_duplicate').insert(data);
+  document.getElementById("startNo").value = '';
+  document.getElementById("endNo").value = '';
+  loadData();
+};
+
+// Cetak tabel
+function printDuplicateTable() {
+  const tableHtml = document.querySelector('.table-container').innerHTML;
+  const totalCbm = document.getElementById("totalCbm").innerText;
+  const totalBox = document.getElementById("totalBox").innerText;
+  const totalWeight = document.getElementById("totalWeight").innerText;
+
+  const printContent = `
+    <html>
+      <head>
+        <title>Print PLT Duplicate</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin:20px; }
+          h2 { text-align:center; margin-bottom:20px; }
+          table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+          th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+          thead { background:#4a90e2; color:#fff; }
+          tbody tr:nth-child(even) { background:#f9f9f9; }
+          .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+        </style>
+      </head>
+      <body>
+        <h2>栈板资料报表</h2>
+        ${tableHtml}
+        <div class="summary">
+          Total CBM: ${totalCbm} <br>
+          Total Box: ${totalBox} <br>
+          Total Berat: ${totalWeight} kg
+        </div>
+      </body>
+    </html>
+  `;
+  const printWindow = window.open('', '', 'width=900,height=600');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
+document.querySelector('.btn-print-duplicate').addEventListener('click', printDuplicateTable);
+
+// Load awal
+loadData();
+
+</script>
+</body>
+</html>
+
+
+✅ Perbaikan yang dilakukan:
+
+Menghapus kode loadData() dan fungsi duplikat yang ada dua kali.
+
+Merapikan style CSS & tombol.
+
+Menggabungkan semua event handler dengan rapi.
+
+Print tabel sekarang terintegrasi dengan summary dan lebih rapi.
+
+Kalau mau, saya bisa buat versi responsive untuk mobile dan tampilan print lebih modern ala struk POS, supaya lebih rapi saat dicetak.
+
+Apakah mau dibuat versi itu juga?
+
+Anda bilang:
+bikin kan print terpisah
+ChatGPT bilang:
+
+Oke! Kita bisa buat halaman print terpisah sehingga ketika tombol “Simpan” ditekan, halaman baru terbuka khusus untuk print tanpa membawa semua style dan elemen di halaman utama. Berikut versi yang sudah dipisah:
+
+<!-- btn-print-duplicate di halaman utama -->
+<button class="btn-print-duplicate" onclick="printDuplicatePage()">Simpan</button>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = '...'; // ganti dengan API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const tbody = document.querySelector("#pltTable tbody");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total
+function calculateTotals() {
+  let totalCbm = 0, totalBox = 0, totalWeight = 0;
+  tbody.querySelectorAll("tr").forEach(row => {
+    totalCbm += parseFloat(row.cells[3].innerText) || 0;
+    totalBox += parseFloat(row.cells[5].innerText) || 0;
+    totalWeight += (parseFloat(row.cells[6].innerText) || 0) + 25;
+  });
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Hapus per baris
+function addDeleteEvents(){
+  tbody.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const tr = btn.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    };
+  });
+}
+
+// Hapus semua
+document.querySelector('.btn-delete-all').addEventListener('click', async () => {
+  if (!confirm("⚠️ Hapus semua data PLT?")) return;
+  const { error } = await supabase.from('plt_table_duplicate').delete().neq('NO', 0);
+  if(error){ alert("Gagal hapus"); return; }
+  tbody.innerHTML = '';
+  calculateTotals();
+});
+
+// Duplicate data sesuai range NO
+document.getElementById("duplicateBtn").onclick = async () => {
+  const startNo = parseInt(document.getElementById("startNo").value);
+  const endNo = parseInt(document.getElementById("endNo").value);
+  if(isNaN(startNo) || isNaN(endNo)){ alert("Isi nomor awal & akhir!"); return; }
+
+  const { data, error } = await supabase.from('plt_table')
+    .select('*').gte('NO', startNo).lte('NO', endNo);
+
+  if(error || !data.length){ alert("Gagal ambil data"); return; }
+
+  await supabase.from('plt_table_duplicate').insert(data);
+  document.getElementById("startNo").value = '';
+  document.getElementById("endNo").value = '';
+  loadData();
+};
+
+// Halaman print terpisah
+function printDuplicatePage() {
+  const url = "print.html";
+  window.open(url, "_blank");
+}
+
+// Load awal
+loadData();
+</script>
+
+
+Kemudian buat file baru print.html untuk halaman print:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#fff; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+</style>
+</head>
+<body>
+<h2>栈板资料报表</h2>
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = '...'; // ganti dengan API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const printTbody = document.getElementById("printTbody");
+const printSummary = document.getElementById("printSummary");
+
+async function loadPrintData() {
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  printSummary.innerHTML = `Total CBM: ${totalCbm.toFixed(2)}<br>Total Box: ${totalBox}<br>Total Berat: ${totalWeight} kg`;
+
+  window.print();
+}
+
+loadPrintData();
+</script>
+</body>
+</html>
+
+
+✅ Kelebihan cara ini:
+
+Halaman utama tetap bersih, tidak perlu menampilkan semua style print.
+
+Print otomatis terbuka di tab baru dan langsung trigger window.print().
+
+Bisa menambahkan style khusus print tanpa mengganggu halaman utama.
+
+Kalau mau, saya bisa buat versi lebih rapi ala struk POS yang compact untuk printer termal juga.
+
+Apakah mau saya buatkan versi struk POS-nya juga?
+
+Anda bilang:
+tambakan langsung bisa di cetak 
+ChatGPT bilang:
+
+Oke! Kita bisa gabungkan print otomatis langsung dari halaman utama tanpa membuka halaman baru. Saat tombol “Simpan” ditekan, data dari duplicate table akan langsung diambil, disusun di HTML print-friendly, dan window.print() dipanggil otomatis. Berikut contoh lengkapnya:
+
+<button class="btn-print-duplicate">Simpan & Cetak</button>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = '...'; // ganti dengan API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const tbody = document.querySelector("#pltTable tbody");
+const weightWarning = document.getElementById("weightWarning");
+
+// Load data
+async function loadData() {
+  tbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+      <td><button class="delete-btn">Hapus 删除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  addDeleteEvents();
+  calculateTotals();
+}
+
+// Hitung total
+function calculateTotals() {
+  let totalCbm = 0, totalBox = 0, totalWeight = 0;
+  tbody.querySelectorAll("tr").forEach(row => {
+    totalCbm += parseFloat(row.cells[3].innerText) || 0;
+    totalBox += parseInt(row.cells[5].innerText) || 0;
+    totalWeight += (parseFloat(row.cells[6].innerText) || 0) + 25;
+  });
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  document.getElementById("totalBox").innerText = totalBox;
+  document.getElementById("totalWeight").innerText = totalWeight;
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
+}
+
+// Hapus per baris
+function addDeleteEvents(){
+  tbody.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const tr = btn.closest("tr");
+      const no = tr.cells[0].innerText;
+      const { error } = await supabase.from('plt_table_duplicate').delete().eq('NO', no);
+      if(error){ alert("Gagal hapus"); return; }
+      tr.remove();
+      calculateTotals();
+    };
+  });
+}
+
+// Tombol cetak langsung
+document.querySelector('.btn-print-duplicate').addEventListener('click', async () => {
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ alert("Gagal ambil data"); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+  let tableRows = '';
+  data.forEach(row => {
+    tableRows += `
+      <tr>
+        <td>${row.NO}</td>
+        <td>${row.SIZE}</td>
+        <td>${row["長*寬*高"]}</td>
+        <td>${row.材積}</td>
+        <td>${row.CBM}</td>
+        <td>${row.箱數}</td>
+        <td>${row.重量}</td>
+      </tr>
+    `;
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  const printContent = `
+    <html>
+    <head>
+      <title>Print PLT Duplicate</title>
+      <style>
+        body{font-family:Arial,sans-serif;margin:20px;}
+        h2{text-align:center;margin-bottom:20px;}
+        table{width:100%;border-collapse:collapse;margin-bottom:20px;}
+        th,td{border:1px solid #ccc;padding:8px;text-align:center;}
+        thead{background:#4a90e2;color:#fff;}
+        tbody tr:nth-child(even){background:#f9f9f9;}
+        .summary{font-weight:bold;margin-top:15px;font-size:16px;}
+      </style>
+    </head>
+    <body>
+      <h2>栈板资料报表</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>PLT</th>
+            <th>SIZE</th>
+            <th>長*寬*高</th>
+            <th>材積</th>
+            <th>CBM</th>
+            <th>箱數</th>
+            <th>重量</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+        </tbody>
+      </table>
+      <div class="summary">
+        Total CBM: ${totalCbm.toFixed(2)}<br>
+        Total Box: ${totalBox}<br>
+        Total Berat: ${totalWeight} kg
+      </div>
+    </body>
+    </html>
+  `;
+
+  const printWindow = window.open('', '', 'width=900,height=600');
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+});
+
+loadData();
+</script>
+
+
+✅ Kelebihan cara ini:
+
+Tidak perlu halaman print terpisah.
+
+Print langsung memunculkan jendela print dengan data terbaru.
+
+Total CBM, Box, dan Berat sudah dihitung otomatis.
+
+Kalau mau, saya bisa buatkan versi compact untuk printer termal / struk supaya langsung pas dicetak ke printer kecil.
+
+Apakah mau dibuatkan versi struk POS juga?
+
+Anda bilang:
+bikin kan tombol cetak di sinih <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#fff; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+</style>
+</head>
+<body>
+<h2>栈板资料报表</h2>
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g'; // ganti dengan API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const printTbody = document.getElementById("printTbody");
+const printSummary = document.getElementById("printSummary");
+
+async function loadPrintData() {
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = 
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    ;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  printSummary.innerHTML = Total 材積: ${totalCbm.toFixed(2)}<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} kg;
+
+  window.print();
+}
+
+loadPrintData();
+</script>
+</body>
+</html>
+ChatGPT bilang:
+
+Berikut versi yang sudah saya tambahkan tombol cetak sehingga pengguna bisa menekan tombol untuk mencetak, tanpa otomatis langsung muncul print saat halaman dibuka:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#fff; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+  .print-btn { padding:10px 20px; background:#2575fc; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:20px; }
+  .print-btn:hover { background:#6a11cb; }
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表</h2>
+
+<!-- Tombol Cetak -->
+<button class="print-btn" id="btnPrint">Cetak</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g'; // ganti API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const printTbody = document.getElementById("printTbody");
+const printSummary = document.getElementById("printSummary");
+const btnPrint = document.getElementById("btnPrint");
+
+// Fungsi untuk load data ke tabel print
+async function loadPrintData() {
+  printTbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  printSummary.innerHTML = `Total 材積: ${totalCbm.toFixed(2)}<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} kg`;
+}
+
+// Event tombol cetak
+btnPrint.addEventListener('click', () => {
+  window.print();
+});
+
+// Load data saat halaman dibuka
+loadPrintData();
+</script>
+</body>
+</html>
+
+
+✅ Fitur sekarang:
+
+Data dari plt_table_duplicate ditampilkan di tabel.
+
+Tombol Cetak bisa diklik untuk mencetak.
+
+Total CBM, Box, dan Berat muncul di bawah tabel.
+
+Kalau mau, saya bisa buatkan versi otomatis menyesuaikan ukuran halaman agar pas untuk printer struk atau A4.
+
+Apakah mau saya buatkan versi printer struk juga?
+
+Anda bilang:
+buatkan tombol printnya di html lain <button class="print-btn" id="btnPrint">Cetak</button>
+ChatGPT bilang:
+
+Oke! Maksudmu tombol Cetak berada di HTML terpisah, misal print.html, dan ketika diklik akan mengambil data dari Supabase, tampilkan, lalu langsung cetak. Berikut contohnya:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #ccc; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#fff; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+  .print-btn { padding:10px 20px; background:#2575fc; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:20px; }
+  .print-btn:hover { background:#6a11cb; }
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表</h2>
+
+<!-- Tombol Cetak -->
+<button class="print-btn" id="btnPrint">Cetak</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const printTbody = document.getElementById("printTbody");
+const printSummary = document.getElementById("printSummary");
+const btnPrint = document.getElementById("btnPrint");
+
+// Load data dari Supabase
+async function loadPrintData() {
+  printTbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  printSummary.innerHTML = `Total 材積: ${totalCbm.toFixed(2)}<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} kg`;
+}
+
+// Tombol cetak
+btnPrint.addEventListener('click', async () => {
+  await loadPrintData();  // pastikan data terbaru
+  window.print();          // langsung cetak
+});
+
+</script>
+</body>
+</html>
+
+
+✅ Fitur:
+
+Tombol Cetak ada di halaman print.html.
+
+Klik tombol → ambil data terbaru dari Supabase → tampilkan → langsung cetak.
+
+Ringkas, tanpa otomatis memunculkan print saat halaman dibuka.
+
+Kalau mau, saya bisa buat versi hanya print tanpa tombol, untuk dipanggil dari halaman utama.
+
+Apakah mau saya buatkan versi itu juga?
+
+Anda bilang:
+riview pakai bahasa mandarin
+ChatGPT bilang:
+
+当然可以，我帮你用中文做一个详细的代码说明和点评：
+
+页面功能概述
+
+这是一个栈板（PLT）重复数据打印页面，主要功能包括：
+
+显示 PLT 数据表：从 Supabase 数据库 plt_table_duplicate 获取数据并显示在 HTML 表格中。
+
+统计总量：计算总材积（CBM）、总箱数和总重量。
+
+打印按钮：点击按钮，加载最新数据并调用 window.print() 打印当前表格和统计信息。
+
+页面结构分析
+<button class="print-btn" id="btnPrint">Cetak</button>
+<table>
+  <thead>...</thead>
+  <tbody id="printTbody"></tbody>
+</table>
+<div class="summary" id="printSummary"></div>
+
+
+按钮 (btnPrint)：用户点击触发打印。
+
+表格 (printTbody)：用于动态填充 PLT 数据。
+
+统计 (printSummary)：显示总 CBM、总箱数、总重量。
+
+核心脚本分析
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadPrintData() {
+  printTbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25; // 每行增加25kg
+  });
+
+  printSummary.innerHTML = `总材積: ${totalCbm.toFixed(2)}<br>总箱数: ${totalBox}<br>总重量: ${totalWeight} kg`;
+}
+
+btnPrint.addEventListener('click', async () => {
+  await loadPrintData();
+  window.print();
+});
+
+
+点评：
+
+数据库连接：
+
+使用 Supabase JS 模块直接连接数据库。
+
+安全性上建议不要在前端直接放置 API Key，最好使用服务端代理或环境变量。
+
+数据渲染：
+
+forEach 遍历数据并生成 <tr>，逻辑清晰。
+
+表格和统计分开处理，易于维护。
+
+重量计算：
+
+每行固定加 25kg，需确认逻辑是否正确。
+
+如果是总重量限制，可以在打印前增加警告提示。
+
+打印逻辑：
+
+点击按钮才触发打印，用户体验好。
+
+页面可扩展：例如添加分页、筛选或者直接生成 PDF。
+
+样式：
+
+简洁明了，thead 背景色区分表头。
+
+也可以使用 CSS @media print 自定义打印样式，隐藏按钮和不必要元素。
+
+建议优化
+
+安全性：
+
+前端放 API Key 有泄漏风险。建议用服务端提供一个临时 token 或者 Cloud Function 来获取数据。
+
+打印美化：
+
+使用 @media print 隐藏按钮，保证打印页面干净。
+
+可以增加页眉、页脚或公司 Logo。
+
+数据刷新：
+
+当前按钮点击时会刷新数据。可以加入 loading 提示，避免数据未加载完成就触发打印。
+
+重量提示：
+
+可以在打印前判断总重量，如果超出阈值，给用户提示。
+
+如果你需要，我可以帮你改造成中文完整打印界面版本，带：
+
+页眉/页脚
+
+隐藏按钮
+
+打印前自动检查总重量
+
+这样打印出来就更专业。
+
+你希望我帮你做这个优化吗？
+
+Anda bilang:
+print review terjemakan dalam bahasa mandarin
+ChatGPT bilang:
+
+当然可以，我帮你把之前的 打印功能点评 完全翻译成中文：
+
+页面功能概述
+
+这是一个栈板（PLT）重复数据打印页面，主要功能包括：
+
+显示 PLT 数据表：从 Supabase 数据库 plt_table_duplicate 获取数据并显示在 HTML 表格中。
+
+统计总量：计算总材积（CBM）、总箱数和总重量。
+
+打印按钮：点击按钮，加载最新数据并调用 window.print() 打印当前表格和统计信息。
+
+页面结构分析
+<button class="print-btn" id="btnPrint">Cetak</button>
+<table>
+  <thead>...</thead>
+  <tbody id="printTbody"></tbody>
+</table>
+<div class="summary" id="printSummary"></div>
+
+
+按钮 (btnPrint)：用户点击触发打印。
+
+表格 (printTbody)：用于动态填充 PLT 数据。
+
+统计 (printSummary)：显示总 CBM、总箱数、总重量。
+
+核心脚本分析
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function loadPrintData() {
+  printTbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.CBM)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25; // 每行增加25kg
+  });
+
+  printSummary.innerHTML = `总材積: ${totalCbm.toFixed(2)}<br>总箱数: ${totalBox}<br>总重量: ${totalWeight} kg`;
+}
+
+btnPrint.addEventListener('click', async () => {
+  await loadPrintData();
+  window.print();
+});
+
+
+点评：
+
+数据库连接：
+
+使用 Supabase JS 模块直接连接数据库。
+
+安全性上建议不要在前端直接放置 API Key，最好使用服务端代理或环境变量。
+
+数据渲染：
+
+forEach 遍历数据并生成 <tr>，逻辑清晰。
+
+表格和统计分开处理，易于维护。
+
+重量计算：
+
+每行固定加 25kg，需确认逻辑是否正确。
+
+如果是总重量限制，可以在打印前增加警告提示。
+
+打印逻辑：
+
+点击按钮才触发打印，用户体验好。
+
+页面可扩展：例如添加分页、筛选或者直接生成 PDF。
+
+样式：
+
+简洁明了，thead 背景色区分表头。
+
+也可以使用 CSS @media print 自定义打印样式，隐藏按钮和不必要元素。
+
+建议优化
+
+安全性：
+
+前端放 API Key 有泄漏风险。建议用服务端提供一个临时 token 或者 Cloud Function 来获取数据。
+
+打印美化：
+
+使用 @media print 隐藏按钮，保证打印页面干净。
+
+可以增加页眉、页脚或公司 Logo。
+
+数据刷新：
+
+当前按钮点击时会刷新数据。可以加入 loading 提示，避免数据未加载完成就触发打印。
+
+重量提示：
+
+可以在打印前判断总重量，如果超出阈值，给用户提示。
+
+如果你需要，我可以帮你改造成中文完整打印界面版本，带：
+
+页眉/页脚
+
+隐藏按钮
+
+打印前自动检查总重量
+
+这样打印出来就更专业。
+
+如果你愿意，我可以直接帮你写好这个完整版本。
+
+你希望我直接做吗？
+
+Anda bilang:
+buatian tombolnseperti ini untuk memindakan ke html lain <button class="btn-print-duplicate">打印功能点评</button>
+ChatGPT bilang:
+
+明白，我帮你写一个按钮，点击后跳转到另一个 HTML 页面，例如 print.html，代码如下：
+
+<button class="btn-print-duplicate" onclick="goToPrintPage()">打印功能点评</button>
+
+<script>
+  function goToPrintPage() {
+    // ganti 'print.html' dengan nama file tujuan
+    window.location.href = 'print.html';
+  }
+</script>
+
+说明：
+
+class="btn-print-duplicate"
+
+样式可以沿用你原来的按钮样式，保证外观一致。
+
+onclick="goToPrintPage()"
+
+点击按钮时调用 goToPrintPage() 函数。
+
+window.location.href
+
+实现页面跳转到你指定的 HTML 文件。
+
+如果你希望，我可以帮你整合到现有 HTML里，保持原有样式，并且按钮放在右上角或你想要的位置。
+
+你希望我直接帮你整合吗？
+
+Anda bilang:
+knapa tidak perfungsi pakai bahasa indonesia
+ChatGPT bilang:
+
+Ah, saya mengerti maksudmu. Kamu ingin tombol langsung berfungsi untuk pindah ke halaman lain tanpa harus menulis fungsi terpisah, menggunakan HTML saja. Dalam HTML kita bisa langsung pakai atribut onclick atau bahkan <a>. Berikut contohnya dalam bahasa Indonesia:
+
+Contoh 1: Pakai tombol dengan onclick
+<button class="btn-print-duplicate" onclick="window.location.href='print.html'">
+  Cetak / 打印功能点评
+</button>
+
+Contoh 2: Pakai link <a> dibungkus tombol
+<a href="print.html">
+  <button class="btn-print-duplicate">Cetak / 打印功能点评</button>
+</a>
+
+
+✅ Keterangan:
+
+window.location.href='print.html' → langsung pindah ke halaman print.html.
+
+Tidak perlu membuat fungsi JavaScript terpisah.
+
+Bisa digabungkan dengan class CSS yang sudah ada agar tombol tetap gaya yang sama.
+
+Kalau mau, saya bisa buatkan versi tombol persis seperti desain sebelumnya dengan posisi di kanan atas dan langsung berfungsi untuk pindah ke halaman cetak.
+
+Apakah mau saya buatkan versi itu?
+
+Anda bilang:
+bikin kan html warna hitam
+ChatGPT bilang:
+
+Baik! Kita bisa membuat versi HTML hitam / dark mode untuk halaman tombol cetak. Berikut contohnya:
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate - Dark Mode</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+    background-color: #121212; /* Latar hitam */
+    color: #f1f1f1;           /* Teks putih */
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #ffffff;
+  }
+
+  .btn-print-duplicate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #444 0%, #222 100%);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 15px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+    margin: 20px auto;
+    display: block;
+  }
+
+  .btn-print-duplicate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 20px rgba(0,0,0,0.7);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #1e1e1e;
+  }
+
+  th, td {
+    border: 1px solid #444;
+    padding: 10px;
+    text-align: center;
+    color: #f1f1f1;
+  }
+
+  thead {
+    background-color: #333;
+  }
+
+  tbody tr:nth-child(even) {
+    background-color: #2a2a2a;
+  }
+
+  .summary {
+    font-weight: bold;
+    margin-top: 15px;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表 (Dark Mode)</h2>
+
+<button class="btn-print-duplicate" onclick="window.location.href='print.html'">
+  打印功能点评 / Cetak
+</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Data akan dimasukkan di sini -->
+  </tbody>
+</table>
+
+<div class="summary">
+  Total CBM: 0 <br>
+  Total Box: 0 <br>
+  Total Berat: 0 kg
+</div>
+
+</body>
+</html>
+
+
+✅ Fitur:
+
+Latar belakang hitam gelap, teks putih.
+
+Tombol gelap dengan efek hover.
+
+Tabel dark mode.
+
+Tombol langsung pindah ke print.html tanpa JS tambahan.
+
+Kalau mau, saya bisa buatkan versi dynamic di mana data dari Supabase langsung muncul di tabel hitam dan tombol cetak langsung mencetak dari tabel tersebut.
+
+Apakah mau versi itu juga?
+
+Anda bilang:
+bikinkan html tanggal otomatis
+ChatGPT bilang:
+
+Baik! Kita bisa membuat halaman HTML yang menampilkan tanggal otomatis hari ini menggunakan JavaScript, lengkap dengan tampilan modern dark mode agar sesuai dengan HTML sebelumnya. Berikut contohnya:
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>PLT Duplicate - Tanggal Otomatis</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 30px;
+    background-color: #121212; /* Latar hitam */
+    color: #f1f1f1;           /* Teks putih */
+    text-align: center;
+  }
+
+  h2 {
+    margin-bottom: 20px;
+    color: #ffffff;
+  }
+
   .date-box {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 20px;
+    padding: 15px 25px;
+    background-color: #1e1e1e;
+    display: inline-block;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  .btn-print-duplicate {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #444 0%, #222 100%);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 15px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+    margin-top: 20px;
+  }
+
+  .btn-print-duplicate:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 20px rgba(0,0,0,0.7);
+  }
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表 - Tanggal Hari Ini</h2>
+
+<div class="date-box" id="currentDate"></div>
+
+<button class="btn-print-duplicate" onclick="window.print()">
+  Cetak Laporan
+</button>
+
+<script>
+  // Fungsi untuk menampilkan tanggal otomatis
+  function showCurrentDate() {
+    const today = new Date();
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = today.toLocaleDateString('id-ID', options);
+    document.getElementById('currentDate').innerText = formattedDate;
+  }
+
+  // Jalankan saat halaman dimuat
+  showCurrentDate();
+</script>
+
+</body>
+</html>
+
+
+✅ Fitur:
+
+Menampilkan tanggal otomatis hari ini dalam format Bahasa Indonesia.
+
+Dark mode dengan teks putih dan latar gelap.
+
+Tombol Cetak Laporan langsung memanggil fungsi print browser.
+
+Kalau mau, saya bisa buatkan versi gabungan: tabel data PLT + tanggal otomatis + tombol cetak langsung dari halaman.
+
+Apakah mau versi gabungan itu juga?
+
+Anda bilang:
+bikin kan ccs ini biar posisi bisa pinda" .date-box {
+    font-size: 10px;
+    font-weight: bold;
+    margin-top: 10px;
+    padding: 15px 25px;
+    display: inline-block;
+    border-radius: 12px;
+  }
+ChatGPT bilang:
+
+Oke! Jika ingin .date-box bisa dipindahkan-posisi (draggable), kita perlu menambahkan CSS untuk posisi absolute dan sedikit JavaScript untuk mengatur drag. Berikut versi CSS + JS:
+
+<style>
+.date-box {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 15px 25px;
+    display: inline-block;
+    border-radius: 12px;
+    background-color: #1e1e1e;
+    color: #fff;
+    position: absolute; /* Supaya bisa dipindahkan */
+    top: 50px;          /* posisi awal */
+    left: 50px;         /* posisi awal */
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+.date-box:active {
+    cursor: grabbing;
+}
+</style>
+
+<script>
+// Membuat date-box draggable
+const dateBox = document.querySelector('.date-box');
+let offsetX, offsetY, isDragging = false;
+
+dateBox.addEventListener('mousedown', e => {
+    isDragging = true;
+    offsetX = e.clientX - dateBox.offsetLeft;
+    offsetY = e.clientY - dateBox.offsetTop;
+});
+
+document.addEventListener('mousemove', e => {
+    if(isDragging){
+        dateBox.style.left = e.clientX - offsetX + 'px';
+        dateBox.style.top = e.clientY - offsetY + 'px';
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    isDragging = false;
+});
+</script>
+
+
+✅ Fitur:
+
+.date-box bisa ditarik dan dipindah di layar.
+
+Posisi awal bisa diatur lewat top dan left.
+
+Tampilan tetap dark mode dengan shadow.
+
+Kalau mau, saya bisa buatkan versi lebih smooth saat drag agar tidak “ngetrap” terlalu kasar.
+
+Apakah mau versi smooth itu juga?
+
+Anda bilang:
+tampilan sesuikan dengan layar   .date-box {
     font-size: 15px;
     font-weight: bold;
     padding: 15px 25px;
@@ -21,10 +3119,33 @@
     border-radius: 12px;
     color: #121;
     position: absolute; /* Supaya bisa dipindahkan */
-    top: 150px;          /* posisi awal */
-    left: 960px;         /* posisi awal */
+    top: 110px;          /* posisi awal */
+    left: 920px;         /* posisi awal */
     cursor: grab;
     user-select: none;
+}
+.date-box:active {
+    cursor: grabbing;
+}
+ChatGPT bilang:
+
+Oke! Supaya .date-box responsif dan menyesuaikan dengan ukuran layar (desktop maupun mobile), kita bisa ubah posisi absolute berbasis persentase dan ukuran font/padding relatif, bukan fixed pixel. Berikut versi CSS + JS yang lebih fleksibel:
+
+<style>
+.date-box {
+    font-size: 2vw;            /* Ukuran font menyesuaikan lebar layar */
+    font-weight: bold;
+    padding: 1.5vw 2.5vw;      /* Padding fleksibel */
+    display: inline-block;
+    border-radius: 12px;
+    color: #121;
+    background-color: #f0f0f0;
+    position: absolute;         /* Bisa dipindahkan */
+    top: 10%;                   /* Posisi awal relatif terhadap tinggi layar */
+    left: 70%;                  /* Posisi awal relatif terhadap lebar layar */
+    cursor: grab;
+    user-select: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 .date-box:active {
     cursor: grabbing;
