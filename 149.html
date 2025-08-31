@@ -21,7 +21,7 @@
   table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
   thead { background:#4a90e2; color:#fff; }
   thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; } /* Sticky header */
-  tbody td { padding:10px; border-bottom:1px solid #eee; text-align:center; }
+  tbody td { padding:10px; border-bottom:1px solid #121; text-align:center; }
   tbody tr:hover { background:#f1f7ff; }
   tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; } /* Sticky footer */
   tfoot td { padding:12px; text-align:center; font-weight:bold; }
@@ -99,7 +99,7 @@
   padding: 12px 24px;
   background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   border: none;
   border-radius: 12px;
@@ -129,8 +129,11 @@
 
 <h2>栈板资料报表</h2>
 <button class="btn-delete-all">Hapus Semua</button>
-<button class="btn-print-duplicate">simpan</button>
+<button class="btn-print-duplicate" onclick="window.location.href='printer.html'">
+  打印功能点评
+</button>
 
+  
 <div class="search-box">
   <input type="number" id="startNo" placeholder="PLT 1">
   <input type="number" id="endNo" placeholder="PLT 2">
@@ -287,8 +290,10 @@ document.getElementById("duplicateBtn").onclick = async function() {
   loadData(); // refresh tabel
 }
 
+
 // Load awal
 loadData();
+
 </script>
 </body>
 </html>
