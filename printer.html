@@ -1,3 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #121; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#121; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+  .print-btn { padding:10px 30px; background:#ff4b2b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:30px; }
+  .print-btn:hover { background:#6a11cb; }
+
+  /* Style tombol modern */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+    position:absolute; top:20px; right:20px;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 20px rgba(0,0,0,0.3);
+  }
+  .btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.2);
+  }
+
+  /* Kotak tanggal */
+  .date-box {
+    font-size: 15px;
+    font-weight: bold;
+    padding: 10px 18px;
+    display: inline-block;
+    border-radius: 10px;
+    color: #121;
+    position: absolute; /* bisa dipindahkan */
+    top: 120px; 
+    left: 10px;
+    cursor: grab;
+    user-select: none;
+  }
+  .date-box:active {
+    cursor: grabbing;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px; /* kasih jarak agar tidak ketimpa date-box */
+  }
+  th, td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: center;
+  }
+
+  /* Saat print */
+  @media print {
+    .btn, .print-btn {
+      display: none !important; /* tombol tidak ikut cetak */
+    }
+    .date-box {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      margin-bottom: 15px;
+      display: block;
+    }
+  }
+
+
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表</h2>
+<div class="date-box" id="currentDate"></div> <!-- Tanggal otomatis -->
+<a href="149.html" class="btn">Kembali </a>
+<button class="print-btn" id="btnPrint">Cetak</button>
+
+<!-- Tabel -->
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+
+
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const printTbody = document.getElementById("printTbody");
@@ -37,12 +157,17 @@ async function loadPrintData() {
 btnPrint.addEventListener('click', () => {
   window.print();
 });
-function showCurrentDate() {
-    const today = new Date();
-    const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-    const formattedDate = today.toLocaleDateString('id-ID', options);
-    document.getElementById('currentDate').innerText = formattedDate;
-  }
 
-  // Jalankan saat halaman dimuat
-  showCurrentDate();
+function showCurrentDate() {
+  const today = new Date();
+  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
+  const formattedDate = today.toLocaleDateString('id-ID', options);
+  document.getElementById('currentDate').innerText = formattedDate;
+}
+showCurrentDate();
+
+// Load data saat halaman dibuka
+loadPrintData();
+</script>
+</body>
+</html>
