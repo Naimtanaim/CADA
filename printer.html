@@ -1,65 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Print PLT Duplicate</title>
-<style>
-  body { font-family: Arial, sans-serif; margin:20px; }
-  h2 { text-align:center; margin-bottom:20px; }
-  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
-  th, td { border:1px solid #121; padding:10px; text-align:center; }
-  thead { background:#4a90e2; color:#121; }
-  tbody tr:nth-child(even) { background:#f9f9f9; }
-  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
-  .print-btn { padding:10px 30px; background:#ff4b2b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:30px; }
-  .print-btn:hover { background:#6a11cb; }
-  .date-box {
-    font-size: 15px;
-    font-weight: bold;
-    padding: 15px 25px;
-    display: inline-block;
-    border-radius: 12px;
-    color: #121;
-    position: absolute; /* Supaya bisa dipindahkan */
-    top: 100px;          /* posisi awal */
-    left: 960px;         /* posisi awal */
-    cursor: grab;
-    user-select: none;
-}
-.date-box:active {
-    cursor: grabbing;
-}
-</style>
-</head>
-<body>
-
-<h2>栈板资料报表</h2>
-<div class="date-box" id="currentDate"></div>
-
-<!-- Tombol Cetak -->
-<button class="print-btn" id="btnPrint">Cetak</button>
-
-<table>
-  <thead>
-    <tr>
-      <th>PLT</th>
-      <th>SIZE</th>
-      <th>長*寬*高</th>
-      <th>材積</th>
-      <th>CBM</th>
-      <th>箱數</th>
-      <th>重量</th>
-    </tr>
-  </thead>
-  <tbody id="printTbody"></tbody>
-</table>
-
-<div class="summary" id="printSummary"></div>
-
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g'; // ganti API key
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const printTbody = document.getElementById("printTbody");
@@ -108,9 +46,3 @@ function showCurrentDate() {
 
   // Jalankan saat halaman dimuat
   showCurrentDate();
-
-// Load data saat halaman dibuka
-loadPrintData();
-</script>
-</body>
-</html>
