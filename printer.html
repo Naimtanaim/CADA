@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Print PLT Duplicate</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; }
+  h2 { text-align:center; margin-bottom:20px; }
+  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
+  th, td { border:1px solid #121; padding:10px; text-align:center; }
+  thead { background:#4a90e2; color:#121; }
+  tbody tr:nth-child(even) { background:#f9f9f9; }
+  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
+  .print-btn { padding:20px 50px; background:#ff4b2b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:30px; }
+  .print-btn:hover { background:#6a11cb; }
+</style>
+</head>
+<body>
+
+<h2>栈板资料报表</h2>
+
+<!-- Tombol Cetak -->
+<button class="print-btn" id="btnPrint">Cetak</button>
+
+<table>
+  <thead>
+    <tr>
+      <th>PLT</th>
+      <th>SIZE</th>
+      <th>長*寬*高</th>
+      <th>材積</th>
+      <th>CBM</th>
+      <th>箱數</th>
+      <th>重量</th>
+    </tr>
+  </thead>
+  <tbody id="printTbody"></tbody>
+</table>
+
+<div class="summary" id="printSummary"></div>
+
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g'; // ganti API key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const printTbody = document.getElementById("printTbody");
+const printSummary = document.getElementById("printSummary");
+const btnPrint = document.getElementById("btnPrint");
+
+// Fungsi untuk load data ke tabel print
+async function loadPrintData() {
+  printTbody.innerHTML = '';
+  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
+  if(error){ console.error(error); return; }
+
+  let totalCbm=0, totalBox=0, totalWeight=0;
+
+  data.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${row.NO}</td>
+      <td>${row.SIZE}</td>
+      <td>${row["長*寬*高"]}</td>
+      <td>${row.材積}</td>
+      <td>${row.CBM}</td>
+      <td>${row.箱數}</td>
+      <td>${row.重量}</td>
+    `;
+    printTbody.appendChild(tr);
+
+    totalCbm += parseFloat(row.材積)||0;
+    totalBox += parseInt(row.箱數)||0;
+    totalWeight += (parseFloat(row.重量)||0)+25;
+  });
+
+  printSummary.innerHTML = `Total 材積: ${totalCbm.toFixed(2)}<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} kg`;
+}
+
+// Event tombol cetak
+btnPrint.addEventListener('click', () => {
+  window.print();
+});
+
+// Load data saat halaman dibuka
+loadPrintData();
+</script>
+</body>
+</html>
