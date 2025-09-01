@@ -1,209 +1,61 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>出貨課1.00</title>
+  <meta charset="UTF-8">
+  <title>作业菜单</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
     body {
-      font-family: 'Microsoft JhengHei', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-      font-size: 13px;
+      font-family: Arial, sans-serif;
+      background: #fff;
+      padding: 20px;
     }
-
     .container {
       display: flex;
-      height: 100vh;
-      overflow: hidden;
+      gap: 40px;
     }
-
-    .sidebar {
-      width: 180px;
-      background-color: #e0e0e0;
-      padding: 8px;
-      border-right: 1px solid #ccc;
-      overflow-y: auto;
+    .column {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-
-    .sidebar button {
-      display: block;
-      width: 100%;
-      margin: 4px 0;
-      padding: 6px;
-      font-size: 12px;
+    .column h3 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    .menu-btn {
+      width: 220px;
+      padding: 6px 10px;
+      font-size: 15px;
+      text-align: left;
+      border: 1px solid #888;
+      border-radius: 4px;
+      background: #f9f9f9;
       cursor: pointer;
     }
-
-    .main {
-      flex: 1;
-      padding: 10px;
-      overflow: auto;
+    .menu-btn:hover {
+      background: #eee;
     }
-
-    .search-bar input,
-    .search-bar select {
-      margin: 4px 2px;
-      padding: 4px;
-      font-size: 12px;
-      width: 100px;
-    }
-
-    .search-bar {
-      margin-bottom: 10px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 4px 6px;
-      text-align: center;
-    }
-
-    th {
-      background-color: #f0f0f0;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    tr:nth-child(even) {
-      background-color: #fff;
-    }
-
-    tr:nth-child(odd) {
-      background-color: #f9f9f9;
-    }
-
-    .highlight {
-      background-color: #d0f0d0;
-    }
-
-    .red-text {
-      color: red;
-    }
-
-    h3 {
-      margin-top: 0;
-      font-size: 16px;
-    }
-
-    a {
-      color: blue;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-wrap: wrap;
-      }
-
-      .sidebar button {
-        flex: 1 1 30%;
-        font-size: 10px;
-        margin: 2px;
-      }
-
-      .main {
-        padding: 5px;
-      }
-
-      table {
-        font-size: 11px;
-      }
-    }
+    /* Warna teks berbeda */
+    .red { color: red; }
+    .blue { color: blue; }
+    .green { color: green; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="sidebar">
-      <button onclick="window.location.href='data.html'">出貨課條碼查詢</button>
-      <button onclick="window.location.href='timer.html'" style="color: blue;">工作计时器</button>
-      <button onclick="window.location.href='penyimpanan.html'">出貨部包裝</button>
-      <button onclick="window.location.href='baru.html'">委運簽單</button>
-      <button onclick="window.location.href='149.html'">栈板资料报表</button>
 
-    </div>
-    <div class="main">
-      <h3>出貨課訂單總進度</h3>
-      <div class="search-bar">
-        客戶: <input type="text" />
-        客戶訂單號: <input type="text" />
-        送貨訂單號: <input type="text" />
-        公司別: <input type="text" />
-        備料單號: <input type="text" />
-        BOM樣號: <input type="text" />
-        <label><input type="radio" name="status" checked /> 未出貨</label>
-        <label><input type="radio" name="status" /> 已出貨</label>
-        收貨率: <input type="text" value="0" size="3" /> - 
-        <input type="text" value="100" size="3" />
-        <button>重新整理</button>
-      </div>
-      <p>第一頁 上一頁 下一頁 最後一頁 頁 1 / 2  每頁筆數：100</p>
-      <table>
-        <thead>
-          <tr>
-            <th>明細</th>
-            <th>客戶</th>
-            <th>客戶訂單號</th>
-            <th>ERP建單日</th>
-            <th>訂單交期</th>
-            <th>送貨訂單號</th>
-            <th>生管預交日</th>
-            <th>erp出貨登收...</th>
-            <th>出貨完成</th>
-            <th>備料單總數</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="highlight">
-            <td><a href="#">明細</a></td>
-            <td><a href="#">訂單現況</a></td>
-            <td>A-086</td>
-            <td>2024/7/19</td>
-            <td>2024/08/09</td>
-            <td>S2417910</td>
-            <td>2024/08/02</td>
-            <td></td>
-            <td></td>
-            <td>2.00</td>
-          </tr>
-          <tr>
-            <td><a href="#">明細</a></td>
-            <td><a href="#">訂單現況</a></td>
-            <td>H-211</td>
-            <td>2024/10/15</td>
-            <td>2024/11/01</td>
-            <td>S2411504</td>
-            <td class="red-text">2025/08/29</td>
-            <td></td>
-            <td></td>
-            <td>1.00</td>
-          </tr>
-          <!-- Tambahkan baris data lainnya sesuai kebutuhan -->
-        </tbody>
-      </table>
-    </div>
+<div class="container">
+  <!-- 仓库 -->
+  <div class="column">
+    <h3>仓库</h3>
+   <button class="menu-btn blue" onclick="window.location.href='149.html'">
+  1. 栈板资料报表
+</button>
+ <button class="menu-btn green" onclick="window.location.href='home.html'">
+  2. 出貨課1
+</button>
+
   </div>
 </body>
 </html>
