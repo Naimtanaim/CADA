@@ -8,46 +8,42 @@
   h2 { text-align:center; margin-bottom:20px; }
   .search-box { margin-bottom:20px; }
   .search-box input { padding:10px; margin-right:6px; width:80px; }
-  .search-box button { padding:10px 20px; cursor:pointer; }
+  .search-box button { padding:8px 20px; cursor:pointer; }
 
-  /* Container untuk tabel scrollable */
   .table-container {
-    max-height: 468px; /* Tinggi tabel scrollable */
+    max-height: 490px;
     overflow-y: auto;
     position: relative;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
   }
 
   table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
   thead { background:#4a90e2; color:#fff; }
-  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; } /* Sticky header */
+  thead th { padding:12px; text-align:center; position: sticky; top:0; z-index:2; }
   tbody td { padding:10px; border-bottom:1px solid #121; text-align:center; }
   tbody tr:hover { background:#f1f7ff; }
-  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; } /* Sticky footer */
+  tfoot { background:#f1f1f1; position: sticky; bottom:0; z-index:1; }
   tfoot td { padding:12px; text-align:center; font-weight:bold; }
 
   button.delete-btn { background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; }
   button.delete-btn:hover { background:#c0392b; }
 
   .summary {
-  display: flex;
-  justify-content: space-between;
-  background: #fff;
-  padding: 15px 25px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  margin-bottom: 10px;
-  font-size: 25px;   /* <== ukuran teks diperbesar */
-  font-weight: bold; /* opsional biar lebih tebal */
-}
+    display: flex;
+    justify-content: space-between;
+    background: #fff;
+    padding: 15px 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 10px;
+    font-size: 25px;
+    font-weight: bold;
+  }
 
-
-  /* Tombol Upload CSV di pojok kanan atas */
   .upload-csv { position:absolute; top:20px; right:20px; }
   .upload-csv button { background:#28a745; color:white; padding:10px 16px; border-radius:8px; font-weight:bold; cursor:pointer; }
   .upload-csv button:hover { background:#1e7e34; }
 
-  /* Peringatan berat */
   #weightWarning {
     display: none;
     background-color: #e74c3c;
@@ -62,61 +58,67 @@
     font-size: 20px;
   }
   .btn-delete-all {
-  position: absolute;
-  top:90px;
-  right: 50px; /* geser sedikit ke kiri dari tombol Kembali */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%);
-  color: white;
-  font-size: 15px;
-  font-weight: 300;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-}
+    position: absolute;
+    top:90px;
+    right: 50px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #f1f1f1 0%, #ff4b2b 0%);
+    color: white;
+    font-size: 15px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+  .btn-delete-all:hover { transform: translateY(-2px); box-shadow: 0 1px 20px rgba(0,0,0,0.3); }
 
-.btn-delete-all:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
-}
+  .btn-print-duplicate {
+    position: absolute;
+    top: 89px;
+    right: 200px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 15px rgba(0,0,0,0.2);
+    transition: all 0.3s ease;
+  }
+  .btn-print-duplicate:hover { transform: translateY(-2px); box-shadow: 0 1px 20px rgba(0,0,0,0.3); }
 
-.btn-delete-all:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
-}
-.btn-print-duplicate {
-  position: absolute;
-  top: 89px;
-  right: 200px; /* sesuaikan posisi */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 1px 15px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-}
-
-.btn-print-duplicate:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 1px 20px rgba(0,0,0,0.3);
-}
-
-.btn-print-duplicate:active {
-  transform: translateY(0);
-  box-shadow: 0 6px 10px rgba(0,0,0,0.2);
-}
+  label { font-size: 18px; margin-right: 10px; }
+  input[type="number"] { padding: 6px 10px; font-size: 16px; width: 60px; margin-right: 10px; }
+  button.set-btn { padding: 6px 15px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f4f4f4; }
+  button.set-btn:hover { background: #ddd; }
+  .output { margin-top: 10px; font-size: 16px; font-weight: bold; }
+      .draggable-box {
+      position: absolute;
+      top: 10px;
+      left: 50px;
+      //*background: #f4f4f4;*//
+      padding: 10px;
+      border-radius: 10px;
+      /*box-shadow: 0 2px 6px rgba(0,0,0,0.3);*/
+      cursor: grab;
+      user-select: none;
+      font-family: Arial, sans-serif;
+    }
+        .draggable-box:active {
+      cursor: grabbing;
+    }
+    .output {
+      margin-top: 8px;
+      font-weight: bold;
+      color: #333;
+    }
+    button {
+      margin-left: 5px;
+      padding: 5px 10px;
+    }
 </style>
 </head>
 <body>
@@ -129,15 +131,18 @@
 
 <h2>栈板资料报表</h2>
 <button class="btn-delete-all">Hapus Semua</button>
-<button class="btn-print-duplicate" onclick="window.location.href='printer.html'">
-  打印功能点评
-</button>
+<button class="btn-print-duplicate" onclick="window.location.href='printer.html'">打印功能点评</button>
 
-  
 <div class="search-box">
   <input type="number" id="startNo" placeholder="PLT 1">
   <input type="number" id="endNo" placeholder="PLT 2">
   <button id="duplicateBtn">OK</button>
+</div>
+<div class="draggable-box" id="dragBox">
+  <label for="palletWeight">桟板重量:</label>
+  <input type="number" id="palletWeight" placeholder="">
+  <button onclick="setWeight()">设定</button>
+  <div class="output" id="result"></div>
 </div>
 
 <div class="summary">
@@ -146,7 +151,6 @@
   <div>Total Berat(重量): <span id="totalWeight">0</span> kg</div>
 </div>
 
-<!-- Peringatan berat -->
 <div id="weightWarning">⚠️ Total总重量超过4000kg!</div>
 
 <div class="table-container">
@@ -164,8 +168,6 @@
       </tr>
     </thead>
     <tbody></tbody>
-    <tfoot>
-    </tfoot>
   </table>
 </div>
 
@@ -175,14 +177,25 @@ const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-
 const tbody = document.querySelector("#pltTable tbody");
-const tfootCbm = document.getElementById("tfootCbm");
-const tfootBox = document.getElementById("tfootBox");
-const tfootWeight = document.getElementById("tfootWeight");
 const weightWarning = document.getElementById("weightWarning");
 
-// Load data dari duplicate table
+// default pallet weight
+let palletWeight = 0;
+
+// fungsi untuk set palletWeight manual
+window.setWeight = function() {
+  const value = document.getElementById("palletWeight").value;
+  if (value === "" || isNaN(value)) {
+    alert("请输入有效的重量!");
+    return;
+  }
+  palletWeight = parseFloat(value);
+  document.getElementById("result").innerText = "当前桟板重量: " + palletWeight + " kg";
+  calculateTotals(); // update total langsung
+};
+
+// load data
 async function loadData() {
   tbody.innerHTML = '';
   const { data, error } = await supabase.from('plt_table_duplicate').select('*');
@@ -207,20 +220,17 @@ async function loadData() {
   calculateTotals();
 }
 
-// Hitung total & tampilkan di footer
+// hitung total
 function calculateTotals() {
-    const rows = document.querySelectorAll("#pltTable tbody tr");
-    let totalCbm = 0, totalBox = 0, totalWeight = 0;
+  const rows = document.querySelectorAll("#pltTable tbody tr");
+  let totalCbm = 0, totalBox = 0, totalWeight = 0;
 
-    rows.forEach(row => {
-      totalCbm += parseFloat(row.cells[3].innerText) || 0;
-      totalBox += parseFloat(row.cells[5].innerText) || 0;
-      let weight = parseFloat(row.cells[6].innerText) || 0;
-      totalWeight += weight + 25; // Tambahkan berat + 25kg per baris
-    });
- // tfootCbm.innerText = totalCbm.toFixed(2);
-  //tfootBox.innerText = totalBox;
- // tfootWeight.innerText = totalWeight;
+  rows.forEach(row => {
+    totalCbm += parseFloat(row.cells[3].innerText) || 0;
+    totalBox += parseFloat(row.cells[5].innerText) || 0;
+    let weight = parseFloat(row.cells[6].innerText) || 0;
+    totalWeight += weight + palletWeight;
+  });
 
   document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
   document.getElementById("totalBox").innerText = totalBox;
@@ -229,7 +239,7 @@ function calculateTotals() {
   weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
 }
 
-// Tombol hapus per baris
+// hapus baris
 function addDeleteEvents(){
   document.querySelectorAll(".delete-btn").forEach(btn=>{
     btn.onclick = async function(){
@@ -242,30 +252,21 @@ function addDeleteEvents(){
     }
   });
 }
+
+// hapus semua
 document.querySelector('.btn-delete-all').addEventListener('click', async () => {
   if (!confirm("⚠️ Apakah Anda yakin ingin menghapus semua data PLT?")) return;
-
-  try {
-    // Hapus semua baris
-    const { error } = await supabase
-      .from('plt_table_duplicate')
-      .delete()
-      .neq('NO', 0); // pakai NO karena kolom NO selalu ada
-
-    if (error) {
-      alert("❌ Gagal menghapus data: " + error.message);
-    } else {
-      alert("✅ Semua data berhasil dihapus!");
-      tbody.innerHTML = ''; // bersihkan tabel di halaman
-      calculateTotals(); // reset total
-    }
-  } catch (err) {
-    alert("❌ Terjadi error: " + err.message);
+  const { error } = await supabase.from('plt_table_duplicate').delete().neq('NO', 0);
+  if (error) {
+    alert("❌ Gagal menghapus data: " + error.message);
+  } else {
+    alert("✅ Semua data berhasil dihapus!");
+    tbody.innerHTML = '';
+    calculateTotals();
   }
 });
 
-
-// Duplicate data sesuai range NO
+// duplicate data
 document.getElementById("duplicateBtn").onclick = async function() {
   const startNo = parseInt(document.getElementById("startNo").value);
   const endNo = parseInt(document.getElementById("endNo").value);
@@ -279,21 +280,16 @@ document.getElementById("duplicateBtn").onclick = async function() {
   if(error){ console.error(error); alert("Gagal ambil data"); return; }
   if(!data.length){ alert("Data tidak ditemukan"); return; }
 
-  // Insert ke duplicate
   const { error: insertError } = await supabase.from('plt_table_duplicate').insert(data);
   if(insertError){ console.error(insertError); alert("Gagal duplicate"); return; }
 
-  // Clear input
   document.getElementById("startNo").value = '';
   document.getElementById("endNo").value = '';
+  loadData();
+};
 
-  loadData(); // refresh tabel
-}
-
-
-// Load awal
+// load awal
 loadData();
-
 </script>
 </body>
 </html>
