@@ -94,6 +94,7 @@
 <div class="date-box" id="currentDate"></div> <!-- Tanggal otomatis -->
 <a href="149.html" class="btn">Kembali </a>
 <button class="print-btn" id="btnPrint">Cetak</button>
+<button class="btn-print-duplicate" onclick="window.location.href='order.html'">委運簽單</button>
 
 <!-- Tabel -->
 <table>
@@ -124,6 +125,17 @@ const printTbody = document.getElementById("printTbody");
 const printSummary = document.getElementById("printSummary");
 const btnPrint = document.getElementById("btnPrint");
 
+// Fungsi untuk simpan totals ke plt_table_duplicate2
+async function saveTotalsToDuplicate2(totalCbm, totalBox, totalWeight) {
+  const { data, error } = await supabase
+    .from('plt_table_duplicate2')
+    .insert([
+      { CBM: totalCbm, 箱數: totalBox, 重量: totalWeight }
+    ]);
+  if(error){ console.error("Error insert totals:", error); }
+  else { console.log("Totals saved to plt_table_duplicate2:", data); }
+}
+
 // Fungsi untuk load data ke tabel print
 async function loadPrintData() {
   printTbody.innerHTML = '';
@@ -147,10 +159,13 @@ async function loadPrintData() {
 
     totalCbm += parseFloat(row.材積)||0;
     totalBox += parseInt(row.箱數)||0;
-    totalWeight += (parseFloat(row.重量)||0)+25;
+    totalWeight += parseFloat(row.重量)||0; // +25 jika mau ditambahkan
   });
 
   printSummary.innerHTML = `Total 材積: ${totalCbm.toFixed(2)}<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} kg`;
+
+  // Simpan totals ke tabel plt_table_duplicate2
+  await saveTotalsToDuplicate2(totalCbm, totalBox, totalWeight);
 }
 
 // Event tombol cetak
@@ -161,8 +176,7 @@ btnPrint.addEventListener('click', () => {
 function showCurrentDate() {
   const today = new Date();
   const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-  const formattedDate = today.toLocaleDateString('id-ID', options);
-  document.getElementById('currentDate').innerText = formattedDate;
+  document.getElementById('currentDate').innerText = today.toLocaleDateString('id-ID', options);
 }
 showCurrentDate();
 
