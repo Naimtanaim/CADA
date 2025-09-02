@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>委運簽單 — 永昌交通企業有限公司</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root { --border: #111; --muted: #666; --accent: #0b6; }
+* { box-sizing: border-box; }
+body { font-family: 'Noto Sans TC', system-ui, -apple-system, Segoe UI, Roboto, 'Microsoft JhengHei', sans-serif; margin: 0; background:#f3f3f3; color:#111; }
+.wrap { max-width: 1200px; margin: 24px auto; padding: 16px; }
+.sheet-wrap { margin-top:24px; }
+.sheet { background:#fff; border:1.2px solid var(--border); padding:16px; aspect-ratio: 1.414/1; width: 100%; max-width: 930px; margin:auto; }
+.sheet .heading { text-align:center; }
+.sheet .heading h1 { margin:0; font-size:26px; letter-spacing:2px; }
+.sheet .heading .company { font-size:22px; font-weight:700; letter-spacing:3px; margin-bottom:4px; }
+.sheet .heading .line { font-size:13px; color:#222; }
+.tbl { width:100%; border-collapse:collapse; }
+.tbl th, .tbl td { border:1px solid var(--border); padding:6px 8px; vertical-align:top; }
+.tbl th { background:#fafafa; font-weight:600; }
+.note { color:#333; font-size:12px; }
+.titlebar { display:flex; justify-content:space-between; align-items:end; }
+.s { font-size:13px; color:#222; }
+
+/* Tombol cetak */
+#print-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg,#6a11cb,#2575fc);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+  transition: all .3s ease;
+  z-index: 1000;
+}
+#print-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.3);
+}
+
+@media print {
+  body { background:#fff; }
+  #print-btn { display:none !important; }
+  .sheet { border:1px solid #000; width: 180mm; height: 250mm; aspect-ratio:auto; padding:10mm; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<button id="print-btn">列印</button>
+<div class="wrap">
+  <div class="sheet-wrap">
+    <div class="sheet" id="sheet">
+      <div class="heading">
+        <div class="company">永昌交通企業有限公司</div>
+        <div class="titlebar">
+          <div class="line">裝訂線　電話：0939-929-626</div>
+          <div id="sheet-date">日期：</div>
+        </div>
+        <h1>委運簽單</h1>
+      </div>
+
+      <!-- Top grid -->
+      <div class="top-grid">
+        <table class="tbl" id="customer-table">
+          <tr>
+            <th style="width:20%">客稱 / 顧名</th>
+            <td></td>
+            <th style="width:20%">統編</th>
+            <td style="width:26%"></td>
+          </tr>
+          <tr>
+            <th>地址</th>
+            <td></td>
+            <th>電話</th>
+            <td></td>
+          </tr>
+        </table>
+
+        <table class="tbl" id="vehicle-table">
+          <tr>
+            <th>車型</th><td></td>
+            <th>載重(噸)</th><td></td>
+          </tr>
+          <tr>
+            <th>車號</th><td></td>
+            <th>司機(代號)</th><td></td>
+          </tr>
+        </table>
+
+        <table class="tbl" id="pickup-table">
+          <tr>
+            <th>公司上貨</th><td style="width:50%"></td>
+          </tr>
+          <tr>
+            <th>下貨時間</th><td></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:10px">
+        <table class="tbl" id="route-table">
+          <tr>
+            <th style="width:14%">運送起訖點 / 記</th>
+            <td></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:10px">
+        <table class="tbl" id="package-table">
+          <tr>
+            <th style="width:10%">包裝</th>
+            <th style="width:28%">數量(板/件)</th>
+            <th style="width:18%">重量(kg)</th>
+            <th style="width:18%">才數</th>
+            <th>備註</th>
+          </tr>
+          <tr>
+            <td class="s"></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="margin-top:10px">
+        <table class="tbl" id="billing-table">
+          <tr>
+            <th style="width:16%">計費方式</th>
+            <th style="width:20%">基本運費(元)</th>
+            <th style="width:28%">另外 (點數×單價)</th>
+            <th style="width:18%">搬工(元)</th>
+            <th style="width:18%">超時費用(元)</th>
+          </tr>
+          <tr>
+            <td class="s"></td>
+            <td id="total-base-fee"></td>
+            <td id="total-additional-fee"></td>
+            <td id="total-labor-fee"></td>
+            <td id="total-overtime-fee"></td>
+          </tr>
+        </table>
+
+        <table class="tbl" style="margin-top:6px">
+          <tr>
+            <th style="width:16%">共同使用(時)</th>
+            <td style="width:18%"></td>
+            <th style="width:18%">基本運費時間(時)</th>
+            <td style="width:18%"></td>
+            <th style="width:14%">總計(元)</th>
+            <td></td>
+          </tr>
+        </table>
+
+        <div class="note" style="margin-top:8px">收費求公道　有錯當查　※感謝惠顧※</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Tombol cetak
+document.getElementById("print-btn").addEventListener("click", () => {
+  window.print();
+});
+
+// Ambil data consignment_sheet
+async function loadSheetData() {
+  const { data, error } = await client
+    .from('consignment_sheet')
+    .select(`
+      customer_name, tax_id, address, phone, pickup_company, dropoff_time,
+      packaging, quantity, weight_kg, volume, remarks, billing_method,
+      base_fee, additional_fee, labor_fee, overtime_fee, total_fee,
+      route_info,
+      vehicles(type, plate),
+      drivers(name, code)
+    `)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if(error){ console.error(error); return; }
+  if(!data || data.length===0) return;
+
+  const item = data[0];
+
+  // === Tanggal otomatis ===
+  const today = new Date();
+  const formattedDate = today.toLocaleDateString("zh-TW", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  document.getElementById("sheet-date").textContent = "日期：" + formattedDate;
+
+  // Customer
+  const cust = document.getElementById('customer-table').rows;
+  cust[0].cells[1].textContent = item.customer_name || '';
+  cust[0].cells[3].textContent = item.tax_id || '';
+  cust[1].cells[1].textContent = item.address || '';
+  cust[1].cells[3].textContent = item.phone || '';
+
+  // Vehicle & driver
+  const veh = document.getElementById('vehicle-table').rows;
+  veh[0].cells[1].textContent = item.vehicles?.type || '';
+  veh[0].cells[3].textContent = ''; //載重 belum ada kolom
+  veh[1].cells[1].textContent = item.vehicles?.plate || '';
+  veh[1].cells[3].textContent = (item.drivers?.name || '') + (item.drivers?.code ? ` (${item.drivers.code})` : '');
+
+  // Pickup
+  const pickup = document.getElementById('pickup-table').rows;
+  pickup[0].cells[1].textContent = item.pickup_company || '';
+  pickup[1].cells[1].textContent = item.dropoff_time ? new Date(item.dropoff_time).toLocaleString() : '';
+
+  // Route
+  document.getElementById('route-table').rows[0].cells[1].textContent = item.route_info || '';
+
+  // Billing
+  document.getElementById('total-base-fee').textContent = item.base_fee || '';
+  document.getElementById('total-additional-fee').textContent = item.additional_fee || '';
+  document.getElementById('total-labor-fee').textContent = item.labor_fee || '';
+  document.getElementById('total-overtime-fee').textContent = item.overtime_fee || '';
+}
+
+// Ambil ringkasan paket dari plt_table_duplicate2
+async function loadPackageSummary() {
+  const { data, error } = await client
+    .from("plt_table_duplicate2")
+    .select("CBM, 箱數, 重量")
+    .order("id", { ascending: false })
+    .limit(1);
+
+  if (error) { console.error(error); return; }
+
+  if (data && data.length > 0) {
+    const rec = data[0];
+    const pkg = document.getElementById("package-table").rows[1].cells;
+    pkg[0].textContent = "總計";
+    pkg[1].textContent = rec.箱數 || "0";
+    pkg[1].style.textAlign = "center";
+
+    pkg[2].textContent = rec.重量 || "0";
+    pkg[2].style.textAlign = "center";
+
+    pkg[3].textContent = rec.CBM || "0";
+    pkg[3].style.textAlign = "center";
+    pkg[4].textContent = "";
+  }
+}
+
+loadSheetData();
+loadPackageSummary();
+</script>
+</body>
+</html>
