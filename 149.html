@@ -183,15 +183,18 @@ let palletWeight = 0;
 
 // Set berat pallet global dan update semua baris di Supabase (tambah ke nilai asli)
 window.setWeight = async function() {
+  const btn = document.querySelector('#dragBox button');
   const value = document.getElementById("palletWeight").value;
   if (value === "" || isNaN(value)) {
     alert("请输入有效的重量!");
     return;
   }
-  palletWeight = parseFloat(value);
+
+  // Ambil nilai palletWeight
+  const palletWeight = parseFloat(value);
   document.getElementById("result").innerText = "当前桟板重量: " + palletWeight + " kg";
 
-  // Ambil semua baris dulu
+  // Ambil semua baris
   const { data: rows, error: fetchError } = await supabase
     .from('plt_table_duplicate')
     .select('NO, 重量');
@@ -202,19 +205,27 @@ window.setWeight = async function() {
     return;
   }
 
-  // Update tiap baris dengan nilai lama + palletWeight
+  // Update tiap baris sekali
   for (const row of rows) {
     const newWeight = (row.重量 || 0) + palletWeight;
-    await supabase
+    const { error } = await supabase
       .from('plt_table_duplicate')
       .update({ 重量: newWeight })
       .eq('NO', row.NO);
+
+    if (error) console.error("Error update NO " + row.NO, error);
   }
 
-  alert("✅ 所有行已更新 + " + palletWeight + " kg");
-  loadData(); // refresh tabel biar nilai terbaru muncul
+  // Disable tombol supaya tidak bisa klik lagi
+  btn.disabled = true;
+  btn.style.backgroundColor = '#ccc';
+  btn.style.cursor = 'not-allowed';
+
+  alert("✅ Semua baris telah diperbarui + " + palletWeight + " kg");
+  loadData();
   calculateTotals();
 };
+
 
 
 // load data
