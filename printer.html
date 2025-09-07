@@ -1,20 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant-TW">
 <head>
-<meta charset="UTF-8">
-<title>Print PLT Duplicate</title>
-<style>
-  body { font-family: Arial, sans-serif; margin:20px; }
-  h2 { text-align:center; margin-bottom:20px; }
-  table { width:100%; border-collapse: collapse; margin-bottom:20px; }
-  th, td { border:1px solid #121; padding:10px; text-align:center; }
-  thead { background:#4a90e2; color:#121; }
-  tbody tr:nth-child(even) { background:#f9f9f9; }
-  .summary { font-weight:bold; margin-top:15px; font-size:16px; }
-  .print-btn { padding:10px 30px; background:#ff4b2b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-bottom:30px; }
-  .print-btn:hover { background:#6a11cb; }
-
-  /* Style tombol modern */
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shipment Metrics Summary</title>
+  <style>
+    body { font-family:'Noto Sans TC', sans-serif; margin:20px; }
+    h1 { text-align:center; margin-bottom:20px; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { border:1px solid #000; padding:6px 8px; text-align:center; }
+    tfoot td { font-weight:bold; background:#f0f0f0; }
+    .toolbar { margin-bottom:16px; }
+    .btn { padding:6px 12px; background:#2563eb; color:#fff; border:none; cursor:pointer; }
+    .btn:disabled { opacity:.6; cursor:not-allowed }
+    @media print {
+      .toolbar { display:none !important; }
+    }
+    /* Style tombol modern */
   .btn {
     display: inline-flex;
     align-items: center;
@@ -33,141 +35,107 @@
     position:absolute; top:20px; right:20px;
   }
 
-  .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 20px rgba(0,0,0,0.3);
-  }
-  .btn:active {
-    transform: translateY(0);
-    box-shadow: 0 6px 10px rgba(0,0,0,0.2);
-  }
-
-  /* Kotak tanggal */
-  .date-box {
-    font-size: 15px;
-    font-weight: bold;
-    padding: 10px 18px;
-    display: inline-block;
-    border-radius: 10px;
-    color: #121;
-    position: absolute; /* bisa dipindahkan */
-    top: 120px; 
-    left: 10px;
-    cursor: grab;
-    user-select: none;
-  }
-  .date-box:active {
-    cursor: grabbing;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px; /* kasih jarak agar tidak ketimpa date-box */
-  }
-  th, td {
-    border: 1px solid #333;
-    padding: 8px;
-    text-align: center;
-  }
-
-  /* Saat print */
-  @media print {
-    .btn, .print-btn {
-      display: none !important; /* tombol tidak ikut cetak */
-    }
-    .date-box {
-      position: relative !important;
-      top: auto !important;
-      left: auto !important;
-      margin-bottom: 15px;
-      display: block;
-    }
-  }
 
 
-</style>
+  </style>
 </head>
 <body>
+  <h1>栈板资料报表</h1>
 
-<h2>栈板资料报表</h2>
-<div class="date-box" id="currentDate"></div> <!-- Tanggal otomatis -->
-<a href="149.html" class="btn">Kembali </a>
-<button class="print-btn" id="btnPrint">Cetak</button>
+  <div class="toolbar">
+    <button id="reloadBtn" class="btn">Reload</button>
+    <button id="printBtn" class="btn">Print</button>
+  </div>
+  <a href="149.html" class="btn">Kembali </a>
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <th>NO</th>
+        <th>SIZE</th>
+        <th>長*寬*高</th>
+        <th>材積</th>
+        <th>CBM</th>
+        <th>箱數</th>
+        <th>重量</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">TOTAL</td>
+        <td id="totalCubic"></td>
+        <td></td>
+        <td id="totalBoxes"></td>
+        <td id="totalWeight"></td>
+      </tr>
+    </tfoot>
+  </table>
 
-<!-- Tabel -->
-<table>
-  <thead>
-    <tr>
-      <th>PLT</th>
-      <th>SIZE</th>
-      <th>長*寬*高</th>
-      <th>材積</th>
-      <th>CBM</th>
-      <th>箱數</th>
-      <th>重量</th>
-    </tr>
-  </thead>
-  <tbody id="printTbody"></tbody>
-</table>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+    const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-<div class="summary" id="printSummary"></div>
+    const tbody = document.querySelector('#dataTable tbody');
+    const totalCubicEl = document.getElementById('totalCubic');
+    const totalBoxesEl = document.getElementById('totalBoxes');
+    const totalWeightEl = document.getElementById('totalWeight');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const printBtn = document.getElementById('printBtn');
 
-<script type="module">
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    let rowsCache = [];
 
-const printTbody = document.getElementById("printTbody");
-const printSummary = document.getElementById("printSummary");
-const btnPrint = document.getElementById("btnPrint");
+    async function loadData() {
+      tbody.innerHTML = '';
+      const { data, error } = await supabase
+        .from('plt_table_duplicate')
+        .select('NO,SIZE,"長*寬*高",材積,CBM,箱數,重量')
+        .order('NO', { ascending: true });
 
-// Fungsi untuk load data ke tabel print
-async function loadPrintData() {
-  printTbody.innerHTML = '';
-  const { data, error } = await supabase.from('plt_table_duplicate').select('*');
-  if(error){ console.error(error); return; }
+      if (error) {
+        console.error(error);
+        return;
+      }
+      rowsCache = data || [];
 
-  let totalCbm=0, totalBox=0, totalWeight=0;
+      for (const row of rowsCache) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.NO ?? ''}</td>
+          <td>${row.SIZE ?? ''}</td>
+          <td>${row["長*寬*高"] ?? ''}</td>
+          <td>${fmtNum(row.材積)}</td>
+          <td>${fmtNum(row.CBM)}</td>
+          <td>${fmtNum(row.箱數,0)}</td>
+          <td>${fmtNum(row.重量)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
 
-  data.forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${row.NO}</td>
-      <td>${row.SIZE}</td>
-      <td>${row["長*寬*高"]}</td>
-      <td>${row.材積}</td>
-      <td>${row.CBM}</td>
-      <td>${row.箱數}</td>
-      <td>${row.重量}</td>
-    `;
-    printTbody.appendChild(tr);
+      recalcTotals();
+    }
 
-    totalCbm += parseFloat(row.材積)||0;
-    totalBox += parseInt(row.箱數)||0;
-    totalWeight += (parseFloat(row.重量)||0;
-  });
+    function recalcTotals() {
+      let totalCubic = 0, totalBoxes = 0, totalWeight = 0;
+      for (const r of rowsCache) {
+        totalCubic += toNum(r.材積);
+        totalBoxes += toNum(r.箱數);
+        totalWeight += toNum(r.重量);
+      }
+      totalCubicEl.textContent = fmtNum(totalCubic)+'材';
+      totalBoxesEl.textContent = fmtNum(totalBoxes,0)+'箱';
+      totalWeightEl.textContent = fmtNum(totalWeight)+'kg';
+    }
 
-  printSummary.innerHTML = `Total 材積: ${totalCbm.toFixed(2)};<br>Total 箱數: ${totalBox}<br>Total 重量: ${totalWeight} ;
-}
+    function toNum(v){ const n = parseFloat(v); return Number.isFinite(n)?n:0; }
+    function fmtNum(v,dec=2){ return Number(toNum(v).toFixed(dec)).toLocaleString(); }
 
-// Event tombol cetak
-btnPrint.addEventListener('click', () => {
-  window.print();
-});
+    reloadBtn.addEventListener('click', loadData);
+    printBtn.addEventListener('click', () => window.print());
 
-function showCurrentDate() {
-  const today = new Date();
-  const options = { year: 'numeric', month: 'numeric', day: 'numeric' };
-  const formattedDate = today.toLocaleDateString('id-ID', options);
-  document.getElementById('currentDate').innerText = formattedDate;
-}
-showCurrentDate();
-
-// Load data saat halaman dibuka
-loadPrintData();
-</script>
+    loadData();
+  </script>
 </body>
 </html>
