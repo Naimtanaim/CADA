@@ -95,30 +95,28 @@
   button.set-btn { padding: 6px 15px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f4f4f4; }
   button.set-btn:hover { background: #ddd; }
   .output { margin-top: 10px; font-size: 16px; font-weight: bold; }
-      .draggable-box {
-      position: absolute;
-      top: 10px;
-      left: 50px;
-      //*background: #f4f4f4;*//
-      padding: 10px;
-      border-radius: 10px;
-      /*box-shadow: 0 2px 6px rgba(0,0,0,0.3);*/
-      cursor: grab;
-      user-select: none;
-      font-family: Arial, sans-serif;
-    }
-        .draggable-box:active {
-      cursor: grabbing;
-    }
-    .output {
-      margin-top: 8px;
-      font-weight: bold;
-      color: #333;
-    }
-    button {
-      margin-left: 5px;
-      padding: 5px 10px;
-    }
+  .draggable-box {
+    position: absolute;
+    top: 10px;
+    left: 50px;
+    padding: 10px;
+    border-radius: 10px;
+    cursor: grab;
+    user-select: none;
+    font-family: Arial, sans-serif;
+  }
+  .draggable-box:active {
+    cursor: grabbing;
+  }
+  .output {
+    margin-top: 8px;
+    font-weight: bold;
+    color: #333;
+  }
+  button {
+    margin-left: 5px;
+    padding: 5px 10px;
+  }
 </style>
 </head>
 <body>
@@ -183,8 +181,8 @@ const weightWarning = document.getElementById("weightWarning");
 // default pallet weight
 let palletWeight = 0;
 
-// fungsi untuk set palletWeight manual
-window.setWeight = function() {
+// Set berat pallet global dan update semua baris di Supabase (tambah ke nilai asli)
+window.setWeight = async function() {
   const value = document.getElementById("palletWeight").value;
   if (value === "" || isNaN(value)) {
     alert("请输入有效的重量!");
@@ -192,8 +190,32 @@ window.setWeight = function() {
   }
   palletWeight = parseFloat(value);
   document.getElementById("result").innerText = "当前桟板重量: " + palletWeight + " kg";
-  calculateTotals(); // update total langsung
+
+  // Ambil semua baris dulu
+  const { data: rows, error: fetchError } = await supabase
+    .from('plt_table_duplicate')
+    .select('NO, 重量');
+
+  if (fetchError) {
+    console.error(fetchError);
+    alert("❌ 获取数据失败: " + fetchError.message);
+    return;
+  }
+
+  // Update tiap baris dengan nilai lama + palletWeight
+  for (const row of rows) {
+    const newWeight = (row.重量 || 0) + palletWeight;
+    await supabase
+      .from('plt_table_duplicate')
+      .update({ 重量: newWeight })
+      .eq('NO', row.NO);
+  }
+
+  alert("✅ 所有行已更新 + " + palletWeight + " kg");
+  loadData(); // refresh tabel biar nilai terbaru muncul
+  calculateTotals();
 };
+
 
 // load data
 async function loadData() {
@@ -229,7 +251,7 @@ function calculateTotals() {
     totalCbm += parseFloat(row.cells[3].innerText) || 0;
     totalBox += parseFloat(row.cells[5].innerText) || 0;
     let weight = parseFloat(row.cells[6].innerText) || 0;
-    totalWeight += weight + palletWeight;
+    totalWeight += weight;
   });
 
   document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
