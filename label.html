@@ -7,9 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <style>
     :root{
-      --card-width-mm: 100mm;
-      --card-height-mm: 70mm;
-      --gap-mm: 6mm;
+      --card-width-mm: 80mm;
+      --card-height-mm: 59mm;
+      --gap-mm: 3mm;
     }
     body {
       font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
@@ -45,19 +45,15 @@
       background:#4caf50;
     }
     .sheet {
-      width: 200mm;
+      width: 210mm;
       margin: 0 auto;
       display: grid;
       grid-template-columns: 1fr 1fr;
       grid-auto-rows: auto;
       gap: var(--gap-mm);
-      padding: 5mm;
+      padding: 8mm;
       box-sizing: border-box;
       background:white;
-
-      /* perkecil seluruh isi */
-      transform: scale(0.7);
-      transform-origin: top left;
     }
     .card {
       box-sizing: border-box;
@@ -83,50 +79,43 @@
     .small-label{ font-size:15px; }
     .big-jp{
       font-family: "Noto Serif", "Times New Roman", serif;
-      font-size:35px;
+      font-size:38px;
       line-height:0.5;
-      letter-spacing:12px;
+      letter-spacing:2px;
     }
     .right-top{
       width:50%;
       text-align:center;
-      border-left:1px solid #000;
+      border-left:2px solid #000;
       padding-left:6px;
     }
     .no-label{ font-size:19px; text-align:right; color:#333; }
     .big-number{
       font-size:56px;
-      font-weight:400;
+      font-weight:500;
       line-height:0.9;
-      margin-top:10px;
+      margin-top:6px;
     }
     .card-mid {
-      border-top:1px solid #000;
-      border-bottom:1px solid #000;
+      border-top:2px solid #000;
+      border-bottom:2px solid #000;
       padding:6px;
       text-align:center;
-      font-size:14px;
-      font-weight:600;
+      font-size:15px;
+      font-weight:400;
     }
     .card-bottom{
-      padding-top:6px;
+      padding-top:1px;
       display:flex;
       align-items:center;
       justify-content:center;
       height:34%;
     }
-    .barcode-svg{ width:78%; height:56px; }
+    .barcode-svg{ width:90%; height:50px; }
     @media print{
       body { margin:0; }
       .controls { display:none; }
-      .sheet { 
-        margin:0; 
-        padding:0.5cm; 
-        width: auto; 
-        background: white; 
-        transform: scale(0.6); /* tetap kecil saat print */
-        transform-origin: top left;
-      }
+      .sheet { margin:0; padding:0.5cm; width: auto; background: white; }
       .card { page-break-inside: avoid; }
     }
   </style>
