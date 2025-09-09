@@ -8,7 +8,7 @@
   <style>
     :root{
       --card-width-mm: 86mm;
-      --card-height-mm: 50mm;
+      --card-height-mm: 60mm;
       --gap-mm: 10mm;
     }
     body {
@@ -54,6 +54,10 @@
       padding: 5mm;
       box-sizing: border-box;
       background:white;
+
+      /* perkecil seluruh isi */
+      transform: scale(0.8);
+      transform-origin: top left;
     }
     .card {
       box-sizing: border-box;
@@ -115,7 +119,14 @@
     @media print{
       body { margin:0; }
       .controls { display:none; }
-      .sheet { margin:0; padding:0.5cm; width: auto; background: white; }
+      .sheet { 
+        margin:0; 
+        padding:0.5cm; 
+        width: auto; 
+        background: white; 
+        transform: scale(0.8); /* tetap kecil saat print */
+        transform-origin: top left;
+      }
       .card { page-break-inside: avoid; }
     }
   </style>
