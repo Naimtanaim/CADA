@@ -7,9 +7,9 @@
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
   <style>
     :root{
-      --card-width-mm: 95mm;
+      --card-width-mm: 80mm;
       --card-height-mm: 60mm;
-      --gap-mm: 6mm;
+      --gap-mm: 10mm;
     }
     body {
       font-family: "Noto Sans", "Segoe UI", Arial, sans-serif;
@@ -51,7 +51,7 @@
       grid-template-columns: 1fr 1fr;
       grid-auto-rows: auto;
       gap: var(--gap-mm);
-      padding: 6mm;
+      padding: 8mm;
       box-sizing: border-box;
       background:white;
     }
@@ -73,18 +73,18 @@
       display:flex;
       flex-direction:column;
       justify-content:flex-start;
-      gap:2px;
-      width:65%;
+      gap:15px;
+      width:55%;
     }
-    .small-label{ font-size:12px; }
+    .small-label{ font-size:15px; }
     .big-jp{
       font-family: "Noto Serif", "Times New Roman", serif;
-      font-size:36px;
+      font-size:38px;
       line-height:0.9;
       letter-spacing:2px;
     }
     .right-top{
-      width:35%;
+      width:50%;
       text-align:center;
       border-left:1px solid #000;
       padding-left:6px;
