@@ -112,12 +112,28 @@
       height:34%;
     }
     .barcode-svg{ width:90%; height:50px; }
-    @media print{
-      body { margin:0; }
-      .controls { display:none; }
-      .sheet { margin:0; padding:0.5cm; width: auto; background: white; }
-      .card { page-break-inside: avoid; }
-    }
+@media print {
+  body { margin:0; }
+  .controls { display:none; }
+
+  /* Atur ukuran halaman print */
+  .sheet {
+    margin: 0 auto;
+    padding: 0.5cm;
+    background: white;
+    width: 21cm;    /* lebar A4 */
+    height: 29.7cm; /* tinggi A4 */
+    box-sizing: border-box;
+  }
+
+  .card {
+    page-break-inside: avoid;
+    width: 8.6cm;   /* contoh ukuran kartu ID standar */
+    height: 5.4cm;
+    margin: 0.2cm;
+  }
+}
+
   </style>
 </head>
 <body>
