@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>出貨課1.00</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: 'Microsoft JhengHei', sans-serif;
@@ -45,8 +44,7 @@
       overflow: auto;
     }
 
-    .search-bar input,
-    .search-bar select {
+    .search-bar input {
       margin: 4px 2px;
       padding: 4px;
       font-size: 12px;
@@ -55,6 +53,16 @@
 
     .search-bar {
       margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+    }
+
+    button {
+      cursor: pointer;
+      font-size: 12px;
+      padding: 4px 8px;
     }
 
     table {
@@ -76,61 +84,21 @@
       z-index: 1;
     }
 
-    tr:nth-child(even) {
-      background-color: #fff;
-    }
-
-    tr:nth-child(odd) {
-      background-color: #f9f9f9;
-    }
-
-    .highlight {
-      background-color: #d0f0d0;
-    }
-
-    .red-text {
-      color: red;
-    }
+    tr:nth-child(even) { background-color: #fff; }
+    tr:nth-child(odd) { background-color: #f9f9f9; }
 
     h3 {
       margin-top: 0;
       font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    a {
-      color: blue;
-      text-decoration: none;
-    }
-
-    a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-      }
-
-      .sidebar {
-        width: 100%;
-        height: auto;
-        display: flex;
-        flex-wrap: wrap;
-      }
-
-      .sidebar button {
-        flex: 1 1 30%;
-        font-size: 10px;
-        margin: 2px;
-      }
-
-      .main {
-        padding: 5px;
-      }
-
-      table {
-        font-size: 11px;
-      }
+    @media print {
+      .sidebar, .search-bar, button, h3 button { display: none; }
+      table { font-size: 10px; }
+      body { background: white; }
     }
   </style>
 </head>
@@ -138,72 +106,113 @@
   <div class="container">
     <div class="sidebar">
       <button onclick="window.location.href='data.html'">出貨課條碼查詢</button>
-      <button onclick="window.location.href='timer.html'" style="color: blue;">工作计时器</button>
       <button onclick="window.location.href='penyimpanan.html'">出貨部包裝</button>
-      <!-- <button onclick="window.location.href='baru.html'">委運簽單</button>-->
-     <!-- <button onclick="window.location.href='karyawan.html'">Card karyawan</button>-->
-
     </div>
+
     <div class="main">
-      <h3>出貨課訂單總進度</h3>
+      <h3>
+        出貨課訂單總進度
+        <button onclick="window.print()">🖨️ 列印資料</button>
+      </h3>
+
       <div class="search-bar">
-        客戶: <input type="text" />
-        客戶訂單號: <input type="text" />
-        送貨訂單號: <input type="text" />
-        公司別: <input type="text" />
-        備料單號: <input type="text" />
-        BOM樣號: <input type="text" />
-        <label><input type="radio" name="status" checked /> 未出貨</label>
-        <label><input type="radio" name="status" /> 已出貨</label>
-        收貨率: <input type="text" value="0" size="3" /> - 
-        <input type="text" value="100" size="3" />
-        <button>重新整理</button>
+        客戶: <input type="text" id="searchCustomer" placeholder="搜尋客戶..." />
+        客戶訂單號: <input type="text" id="searchOrder" placeholder="訂單號..." />
+        送貨訂單號: <input type="text" id="searchDelivery" placeholder="送貨單..." />
+        公司別: <input type="text" id="searchCompany" placeholder="公司別..." />
+        存放位置: <input type="text" id="searchPlace" placeholder="存放位置..." />
+        <button onclick="loadData()">🔄 重新整理</button>
       </div>
-      <p>第一頁 上一頁 下一頁 最後一頁 頁 1 / 2  每頁筆數：100</p>
+
+      <p id="countInfo">載入中...</p>
+
       <table>
         <thead>
           <tr>
-            <th>明細</th>
+            <th>包裝機板</th>
+            <th>箱號</th>
+            <th>備料單號</th>
+            <th>原始備料單號</th>
+            <th>公司號</th>
+            <th>包裝數量</th>
             <th>客戶</th>
             <th>客戶訂單號</th>
-            <th>ERP建單日</th>
-            <th>訂單交期</th>
             <th>送貨訂單號</th>
-            <th>生管預交日</th>
-            <th>erp出貨登收...</th>
-            <th>出貨完成</th>
-            <th>備料單總數</th>
+            <th>打包時間</th>
+            <th>打包人員</th>
+            <th>存放位置</th>
+            <th>存檔時間</th>
           </tr>
         </thead>
-        <tbody>
-          <tr class="highlight">
-            <td><a href="#">明細</a></td>
-            <td><a href="#">訂單現況</a></td>
-            <td>A-086</td>
-            <td>2024/7/19</td>
-            <td>2024/08/09</td>
-            <td>S2417910</td>
-            <td>2024/08/02</td>
-            <td></td>
-            <td></td>
-            <td>2.00</td>
-          </tr>
-          <tr>
-            <td><a href="#">明細</a></td>
-            <td><a href="#">訂單現況</a></td>
-            <td>H-211</td>
-            <td>2024/10/15</td>
-            <td>2024/11/01</td>
-            <td>S2411504</td>
-            <td class="red-text">2025/08/29</td>
-            <td></td>
-            <td></td>
-            <td>1.00</td>
-          </tr>
-          <!-- Tambahkan baris data lainnya sesuai kebutuhan -->
+        <tbody id="dataBody">
+          <tr><td colspan="13">資料載入中...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <script>
+    const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadData() {
+      const tbody = document.getElementById("dataBody");
+      const c = document.getElementById("searchCustomer").value.trim();
+      const o = document.getElementById("searchOrder").value.trim();
+      const d = document.getElementById("searchDelivery").value.trim();
+      const company = document.getElementById("searchCompany").value.trim();
+      const place = document.getElementById("searchPlace").value.trim();
+
+      tbody.innerHTML = "<tr><td colspan='13'>🔄 正在載入資料...</td></tr>";
+
+      let query = supabaseClient.from("gudang_penyimpanan").select("*").order("saved_at", { ascending: false });
+
+      if (c) query = query.ilike("customer", `%${c}%`);
+      if (o) query = query.ilike("customer_order_number", `%${o}%`);
+      if (d) query = query.ilike("delivery_order_number", `%${d}%`);
+      if (company) query = query.ilike("company_number", `%${company}%`);
+      if (place) query = query.ilike("place", `%${place}%`);
+
+      const { data, error } = await query;
+
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="13" style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='13'>⚠️ 無資料</td></tr>";
+        document.getElementById("countInfo").textContent = "📦 無資料";
+        return;
+      }
+
+      document.getElementById("countInfo").textContent = `📦 目前共有 ${data.length} 筆資料`;
+
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.packaging_board || ""}</td>
+          <td>${row.box_number || ""}</td>
+          <td>${row.material_order_number || ""}</td>
+          <td>${row.original_material_order_number || ""}</td>
+          <td>${row.company_number || ""}</td>
+          <td>${row.packaging_quantity || ""}</td>
+          <td>${row.customer || ""}</td>
+          <td>${row.customer_order_number || ""}</td>
+          <td>${row.delivery_order_number || ""}</td>
+          <td>${row.packaging_time ? new Date(row.packaging_time).toLocaleString() : ""}</td>
+          <td>${row.packer || ""}</td>
+          <td>${row.place || ""}</td>
+          <td>${row.saved_at ? new Date(row.saved_at).toLocaleString() : ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Muat data otomatis saat halaman dibuka
+    document.addEventListener("DOMContentLoaded", loadData);
+  </script>
 </body>
 </html>
