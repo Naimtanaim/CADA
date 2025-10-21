@@ -1,294 +1,205 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="id">
 <head>
-<meta charset="UTF-8" />
-<title>依客戶別棧位 (F_05) 1.0</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Penyimpanan Barang Otomatis</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body {
-    font-family: 'Microsoft JhengHei', sans-serif;
-    background: #eee;
-    margin: 20px;
-    user-select: none;
-  }
-  .header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    position: relative;
-  }
-  .header label {
-    font-weight: bold;
-    white-space: nowrap;
-  }
-  input[type=text] {
-    padding: 4px 6px;
-    font-size: 18px;
-    width: 140px;
-  }
-  input:disabled {
-    background-color: #ddd;
-    cursor: not-allowed;
-  }
-  .header .customer-info {
-    font-size: 16px;
-    white-space: nowrap;
-    margin-left: 20px;
-  }
-  #btnSelect {
-    margin-left: 12px;
-    height: 37px;
-    font-size: 16px;
-    cursor: pointer;
-  }
-  table {
-    width: 60%;
-    border-collapse: collapse;
-    background: white;
-    margin-top: 12px;
-    font-size: 16px;
-  }
-  th, td {
-    border: 1px solid #bbb;
-    padding: 6px 8px;
-    text-align: center;
-    vertical-align: middle;
-  }
-  th {
-    background: #ddd;
-  }
-  td:first-child {
-    width: 30px;
-  }
-  td:nth-child(2) {
-    width: 60px;
-  }
-  td:nth-child(3) {
-    width: 100px;
-  }
-  td.employee-valid {
-    width: 80px;
-    font-weight: bold;
-  }
-  button.detail-btn {
-    padding: 4px 8px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  #employeeName {
-    font-weight: bold;
-    margin-left: 10px;
-    color: green;
-  }
-  #errorLog {
-    margin-top: 12px;
-    color: red;
-    font-weight: bold;
-  }
-  .popup-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(1);
-    background-color: #ff4d4d;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 1px;
-    font-size: 70px;
-    font-weight: bold;
-    white-space: nowrap;
-    display: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    animation: fadeIn 0.3s ease forwards;
-    z-index: 1000;
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  }
-  @keyframes fadeOut {
-    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    to { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-  }
-  .fade-out {
-    animation: fadeOut 0.5s ease forwards;
-  }
-  .popup-message::after {
-    content: "";
-    position: absolute;
-    bottom: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 6px;
-    border-style: solid;
-    border-color: #ff4d4d transparent transparent transparent;
-  }
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f9;
+  margin: 0;
+  padding: 30px;
+}
+.container {
+  max-width: 800px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+h2 {
+  text-align: center;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+label {
+  font-weight: bold;
+  margin-right: 10px;
+}
+input[type=text] {
+  padding: 8px;
+  font-size: 16px;
+  width: 150px;
+}
+#status {
+  margin-top: 15px;
+  font-weight: bold;
+}
+.success { color: green; }
+.error { color: red; }
+.warning { color: orange; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+th {
+  background: #007bff;
+  color: white;
+}
 </style>
 </head>
 <body>
-  <!-- Employee barcode -->
-  <div class="header">
-    <label for="employeeBarcode">員工條碼:</label>
-    <input type="text" id="employeeBarcode" autofocus autocomplete="on" />
-    <span id="employeeName"></span>
-    <div class="popup-message" id="popup-employeeBarcode">⚠️ 無此員工條碼</div>
+<div class="container">
+  <h2>📦 Gudang Penyimpanan 存放位置</h2>
+
+  <div>
+    <label>Tempat 存放位置:</label>
+    <input type="text" id="placeInput" placeholder="">
+  </div>
+  <br>
+  <div>
+    <label>Barcode:</label>
+    <input type="text" id="barcodeInput" autofocus placeholder="">
   </div>
 
-  <!-- Template barcode -->
-  <div class="header">
-    <label for="templateBarcode">客戶端位模板條碼:</label>
-    <input type="text" id="templateBarcode" style="width: 100px;" disabled />
-    <div class="customer-info">客戶：<strong>H-149</strong></div>
-  </div>
-
-  <!-- Carton barcode -->
-  <div class="header">
-    <label for="cartonBarcode">紙箱Barcode:</label>
-    <input type="text" id="cartonBarcode" style="width: 100px;" disabled />
-    <div class="popup-message" id="popup-cartonBarcode">⚠️ 無此紙箱條碼</div>
-    <button id="btnSelect">勾選務出棧板</button>
-  </div>
+  <p id="status"></p>
 
   <table>
     <thead>
       <tr>
-        <th>項</th>
-        <th>紙箱Barcode</th>
-        <th>明細</th>
+        <th>Barcode</th>
+        <th>Customer</th>
+        <th>Company No</th>
+        <th>Qty</th>
+        <th>Status</th>
       </tr>
     </thead>
-    <tbody id="barcodeList">
-      <tr>
-        <td><input type="checkbox" /></td>
-        <td>80114</td>
-        <td><button class="detail-btn">出貨明細</button></td>
-      </tr>
-      <tr>
-        <td><input type="checkbox" /></td>
-        <td>80125</td>
-        <td><button class="detail-btn">出貨明細</button></td>
-      </tr>
-    </tbody>
+    <tbody id="tableBody"></tbody>
   </table>
-
-  <div id="errorLog"></div>
+</div>
 
 <script>
-  const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const barcodeInput = document.getElementById('barcodeInput');
+const tableBody = document.getElementById('tableBody');
+const statusEl = document.getElementById('status');
+let lastCustomer = null; // menyimpan customer terakhir yang valid
 
-  async function cekEmployee() {
-    const barcode = document.getElementById('employeeBarcode').value.trim();
-    const popup = document.getElementById('popup-employeeBarcode');
-    const nameDisplay = document.getElementById('employeeName');
+barcodeInput.addEventListener('change', async () => {
+  const barcode = barcodeInput.value.trim();
+  const place = document.getElementById('placeInput').value.trim();
+  statusEl.textContent = '';
+  barcodeInput.disabled = true;
 
-    if (!barcode) {
-      popup.style.display = 'block';
-      nameDisplay.textContent = '';
-      employeeValid = false;
-      disableOtherInputs();
-      return;
-    }
-
-    const { data, error } = await supabaseClient
-      .from('employees')
-      .select('name')
-      .eq('barcode', barcode)
-      .maybeSingle();
-
-    if (error || !data) {
-      popup.style.display = 'block';
-      nameDisplay.textContent = '';
-      employeeValid = false;
-      disableOtherInputs();
-      setTimeout(() => { popup.style.display = 'none'; }, 3000);
-      return;
-    }
-
-    nameDisplay.textContent = data.name;
-    nameDisplay.style.color = 'green';
-    popup.style.display = 'none';
-    employeeValid = true;
-    enableOtherInputs();
+  if (!barcode) {
+    statusEl.innerHTML = `<span class="error">❌ Masukkan barcode terlebih dahulu.</span>`;
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    return;
   }
 
-  function disableOtherInputs() {
-    document.getElementById('templateBarcode').disabled = true;
-    document.getElementById('cartonBarcode').disabled = true;
+  // 🔍 Cek apakah barcode sudah ada di gudang_penyimpanan
+  const { data: existing, error: existingErr } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .select('barcode')
+    .eq('barcode', barcode)
+    .maybeSingle();
+
+  if (existing) {
+    statusEl.innerHTML = `<span class="error">⚠️ Barcode <b>${barcode}</b> sudah ada, tidak dimasukkan ulang.</span>`;
+    barcodeInput.value = '';
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    return;
   }
 
-  function enableOtherInputs() {
-  const templateInput = document.getElementById('templateBarcode');
-  const cartonInput = document.getElementById('cartonBarcode');
-  templateInput.disabled = false;
-  cartonInput.disabled = false;
+  // 🔍 Cari data barcode di tabel "data"
+  const { data, error } = await supabaseClient
+    .from('data')
+    .select('*')
+    .eq('box_number', barcode)
+    .maybeSingle();
 
-  // Otomatis fokus ke input templateBarcode
-  templateInput.focus();
-}
-
-
-  // Event listener untuk input Employee
-  document.getElementById('employeeBarcode').addEventListener('input', () => {
-    // set timeout untuk debounce typing
-    clearTimeout(window.employeeTypingTimer);
-    window.employeeTypingTimer = setTimeout(cekEmployee, 500);
-  });
-
-  // Setup untuk template dan carton barcode tetap pakai Supabase check
-  async function setupBarcodeCheck(inputId, tableName) {
-    const input = document.getElementById(inputId);
-    const popup = document.getElementById(`popup-${inputId}`);
-    let typingTimer;
-
-    input.addEventListener('input', () => {
-      clearTimeout(typingTimer);
-      if (!employeeValid) return; // tidak boleh input jika employee belum valid
-      const barcode = input.value.trim();
-      if (!barcode) return;
-
-      typingTimer = setTimeout(async () => {
-        const { data, error } = await supabaseClient
-          .from(tableName)
-          .select('name')
-          .eq('barcode', barcode)
-          .maybeSingle();
-
-        if (!data) {
-          popup.style.display = 'block';
-          setTimeout(() => { popup.style.display = 'none'; }, 3000);
-          return;
-        }
-
-        popup.style.display = 'none';
-      }, 500);
-    });
+  if (error) {
+    statusEl.innerHTML = `<span class="error">❌ Gagal mencari data: ${error.message}</span>`;
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    return;
   }
 
-  setupBarcodeCheck('templateBarcode', 'templates');
-  setupBarcodeCheck('cartonBarcode', 'cartons');
+  if (!data) {
+    statusEl.innerHTML = `<span class="warning">⚠️ Barcode <b>${barcode}</b> tidak ditemukan di tabel data.</span>`;
+    barcodeInput.value = '';
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    return;
+  }
 
-  document.getElementById('btnSelect').addEventListener('click', () => {
-    if (!employeeValid) {
-      alert('請先輸入有效員工條碼');
-      return;
-    }
-    const checkedBarcodes = [...document.querySelectorAll('#barcodeList input[type=checkbox]:checked')]
-      .map(cb => cb.closest('tr').children[1].textContent);
-    if (checkedBarcodes.length === 0) {
-      alert('請先勾選至少一個紙箱Barcode');
-      return;
-    }
-    alert('Barcodes terpilih:\n' + checkedBarcodes.join('\n'));
-  });
+  // 🔒 Cek apakah customer sama dengan sebelumnya
+  if (lastCustomer && data.customer !== lastCustomer) {
+    statusEl.innerHTML = `<span class="error">❌ Customer tidak sama dengan sebelumnya!<br>(${lastCustomer} ≠ ${data.customer})</span>`;
+    barcodeInput.value = '';
+    barcodeInput.disabled = false;
+    barcodeInput.focus();
+    return;
+  }
 
-  // Nonaktifkan input template & carton di awal
-  disableOtherInputs();
+  // ✅ Jika semua valid → simpan ke gudang_penyimpanan
+  const payload = {
+    packaging_board: data.packaging_board,
+    box_number: data.box_number,
+    material_order_number: data.material_order_number,
+    original_material_order_number: data.original_material_order_number,
+    company_number: data.company_number,
+    packaging_quantity: data.packaging_quantity,
+    customer: data.customer,
+    customer_order_number: data.customer_order_number,
+    delivery_order_number: data.delivery_order_number,
+    packaging_time: data.packaging_time,
+    packer: data.packer,
+    barcode: data.box_number,
+    place: place,
+    saved_at: new Date().toISOString()
+  };
+
+  const { error: insertError } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .insert([payload]);
+
+  if (insertError) {
+    statusEl.innerHTML = `<span class="error">❌ Gagal menyimpan: ${insertError.message}</span>`;
+  } else {
+    statusEl.innerHTML = `<span class="success">✅ Barang ${barcode} berhasil dipindahkan ke ${place}</span>`;
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${data.box_number}</td>
+      <td>${data.customer || '-'}</td>
+      <td>${data.company_number || '-'}</td>
+      <td>${data.packaging_quantity || '-'}</td>
+      <td style="color:green;font-weight:bold;">✔️ Dipindahkan</td>
+    `;
+    tableBody.prepend(row);
+
+    // Simpan customer terakhir
+    lastCustomer = data.customer;
+  }
+
+  barcodeInput.value = '';
+  barcodeInput.disabled = false;
+  barcodeInput.focus();
+});
 </script>
 </body>
 </html>
