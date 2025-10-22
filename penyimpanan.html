@@ -13,7 +13,7 @@ body {
   padding: 30px;
 }
 .container {
-  max-width: 800px;
+  max-width: 850px;
   margin: auto;
   background: white;
   padding: 20px;
@@ -32,15 +32,21 @@ label {
 input[type=text] {
   padding: 8px;
   font-size: 16px;
-  width: 150px;
+  width: 200px;
 }
-#status {
-  margin-top: 15px;
-  font-weight: bold;
+button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
 }
-.success { color: green; }
-.error { color: red; }
-.warning { color: orange; }
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+.delete-btn:hover {
+  background: #b02a37;
+}
 table {
   width: 100%;
   border-collapse: collapse;
@@ -54,6 +60,39 @@ th, td {
 th {
   background: #007bff;
   color: white;
+}
+
+/* 🔔 Gaya notifikasi pop-up */
+.notification {
+  position: fixed;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: red;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  padding: 20px 30px;
+  z-index: 9999;
+  display: none;
+  font-size: 18px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
+.notification.show {
+  display: block;
+}
+.notification.success {
+  border-left: 8px solid #28a745;
+}
+.notification.error {
+  border-left: 8px solid #dc3545;
+}
+.notification.warning {
+  border-left: 8px solid #ffc107;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
 }
 </style>
 </head>
@@ -71,21 +110,24 @@ th {
     <input type="text" id="barcodeInput" autofocus placeholder="">
   </div>
 
-  <p id="status"></p>
-
   <table>
     <thead>
       <tr>
+        <th>No</th>
         <th>Barcode</th>
         <th>Customer</th>
         <th>Company No</th>
         <th>Qty</th>
         <th>Status</th>
+        <th>Aksi</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
 </div>
+
+<!-- 🔔 Elemen notifikasi -->
+<div id="popup" class="notification"></div>
 
 <script>
 const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
@@ -94,69 +136,71 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const barcodeInput = document.getElementById('barcodeInput');
 const tableBody = document.getElementById('tableBody');
-const statusEl = document.getElementById('status');
-let lastCustomer = null; // menyimpan customer terakhir yang valid
+let lastCustomer = null;
+let counter = 1;
+
+// 🔔 Fungsi tampilkan notifikasi
+function showPopup(message, type = "info", duration = 5000) {
+  const popup = document.getElementById('popup');
+  popup.textContent = message;
+  popup.className = `notification show ${type}`;
+  setTimeout(() => {
+    popup.classList.remove('show');
+  }, duration);
+}
 
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
   const place = document.getElementById('placeInput').value.trim();
-  statusEl.textContent = '';
   barcodeInput.disabled = true;
 
   if (!barcode) {
-    statusEl.innerHTML = `<span class="error">❌ Masukkan barcode terlebih dahulu.</span>`;
+    showPopup('❌ Masukkan barcode terlebih dahulu!', 'error');
     barcodeInput.disabled = false;
     barcodeInput.focus();
     return;
   }
 
   // 🔍 Cek apakah barcode sudah ada di gudang_penyimpanan
-  const { data: existing, error: existingErr } = await supabaseClient
+  const { data: existing } = await supabaseClient
     .from('gudang_penyimpanan')
     .select('barcode')
     .eq('barcode', barcode)
     .maybeSingle();
 
   if (existing) {
-    statusEl.innerHTML = `<span class="error">⚠️ Barcode <b>${barcode}</b> sudah ada, tidak dimasukkan ulang.</span>`;
+    showPopup(`⚠️ Barcode ${barcode} sudah tersimpan sebelumnya.`, 'warning');
     barcodeInput.value = '';
     barcodeInput.disabled = false;
     barcodeInput.focus();
     return;
   }
 
-  // 🔍 Cari data barcode di tabel "data"
+  // 🔍 Cari data di tabel "data"
   const { data, error } = await supabaseClient
     .from('data')
     .select('*')
     .eq('box_number', barcode)
-    .maybeSingle();
+    .limit(1)
+    .single();
 
-  if (error) {
-    statusEl.innerHTML = `<span class="error">❌ Gagal mencari data: ${error.message}</span>`;
+  if (error || !data) {
+    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan!`, 'error');
     barcodeInput.disabled = false;
     barcodeInput.focus();
     return;
   }
 
-  if (!data) {
-    statusEl.innerHTML = `<span class="warning">⚠️ Barcode <b>${barcode}</b> tidak ditemukan di tabel data.</span>`;
-    barcodeInput.value = '';
-    barcodeInput.disabled = false;
-    barcodeInput.focus();
-    return;
-  }
-
-  // 🔒 Cek apakah customer sama dengan sebelumnya
+  // 🔒 Cek konsistensi customer
   if (lastCustomer && data.customer !== lastCustomer) {
-    statusEl.innerHTML = `<span class="error">❌ Customer tidak sama dengan sebelumnya!<br>(${lastCustomer} ≠ ${data.customer})</span>`;
+    showPopup(`❌ Customer berbeda dari sebelumnya!\n(${lastCustomer} ≠ ${data.customer})`, 'error', 3000);
     barcodeInput.value = '';
     barcodeInput.disabled = false;
     barcodeInput.focus();
     return;
   }
 
-  // ✅ Jika semua valid → simpan ke gudang_penyimpanan
+  // ✅ Simpan ke gudang_penyimpanan
   const payload = {
     packaging_board: data.packaging_board,
     box_number: data.box_number,
@@ -169,7 +213,7 @@ barcodeInput.addEventListener('change', async () => {
     delivery_order_number: data.delivery_order_number,
     packaging_time: data.packaging_time,
     packer: data.packer,
-    barcode: data.box_number,
+    barcode: barcode,
     place: place,
     saved_at: new Date().toISOString()
   };
@@ -179,20 +223,10 @@ barcodeInput.addEventListener('change', async () => {
     .insert([payload]);
 
   if (insertError) {
-    statusEl.innerHTML = `<span class="error">❌ Gagal menyimpan: ${insertError.message}</span>`;
+    showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
   } else {
-    statusEl.innerHTML = `<span class="success">✅ Barang ${barcode} berhasil dipindahkan ke ${place}</span>`;
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${data.box_number}</td>
-      <td>${data.customer || '-'}</td>
-      <td>${data.company_number || '-'}</td>
-      <td>${data.packaging_quantity || '-'}</td>
-      <td style="color:green;font-weight:bold;">✔️ Dipindahkan</td>
-    `;
-    tableBody.prepend(row);
-
-    // Simpan customer terakhir
+   showPopup(`✅ Barang ${barcode} berhasil disimpan di ${place}`, 'success');
+    addRowToTable(barcode, data);
     lastCustomer = data.customer;
   }
 
@@ -200,6 +234,47 @@ barcodeInput.addEventListener('change', async () => {
   barcodeInput.disabled = false;
   barcodeInput.focus();
 });
+
+// 🧾 Tambah baris baru di tabel
+function addRowToTable(barcode, data) {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${counter++}</td>
+    <td>${barcode}</td>
+    <td>${data.customer || '-'}</td>
+    <td>${data.company_number || '-'}</td>
+    <td>${data.packaging_quantity || '-'}</td>
+    <td style="color:green;font-weight:bold;">✔️ Disimpan</td>
+    <td><button class="delete-btn" onclick="deleteRow('${barcode}', this)">Hapus</button></td>
+  `;
+  tableBody.prepend(row);
+  updateRowNumbers();
+}
+
+// 🗑️ Hapus data dari Supabase + tabel
+async function deleteRow(barcode, btn) {
+  if (!confirm(`Yakin ingin menghapus barcode ${barcode}?`)) return;
+
+  const { error } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .delete()
+    .eq('barcode', barcode);
+
+  if (error) {
+    showPopup('❌ Gagal menghapus: ' + error.message, 'error');
+  } else {
+    btn.closest('tr').remove();
+    updateRowNumbers();
+    showPopup(`🗑️ Data ${barcode} telah dihapus.`, 'warning');
+  }
+}
+
+// 🔢 Update nomor urut setelah hapus
+function updateRowNumbers() {
+  [...tableBody.rows].forEach((row, index) => {
+    row.cells[0].textContent = index + 1;
+  });
+}
 </script>
 </body>
 </html>
