@@ -6,108 +6,43 @@
 <title>Penyimpanan Barang Otomatis</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f6f9;
-  margin: 0;
-  padding: 30px;
-}
-.container {
-  max-width: 850px;
-  margin: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-h2 {
-  text-align: center;
-  color: #007bff;
-  margin-bottom: 20px;
-}
-label {
-  font-weight: bold;
-  margin-right: 10px;
-}
-input[type=text] {
-  padding: 8px;
-  font-size: 16px;
-  width: 200px;
-}
-button {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.delete-btn {
-  background: #dc3545;
-  color: white;
-}
-.delete-btn:hover {
-  background: #b02a37;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-}
-th {
-  background: #007bff;
-  color: white;
-}
-
-/* 🔔 Gaya notifikasi pop-up */
-.notification {
-  position: fixed;
-  top: 60%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: red;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  padding: 30px 50px;
-  z-index: 9999;
-  display: none;
-  font-size: 20px;
-  text-align: center;
-  animation: fadeIn 0.3s ease;
-}
-.notification.show {
-  display: block;
-}
-.notification.success {
-  border-left: 10px solid #28a745;
-}
-.notification.error {
-  border-left: 10px solid #dc3545;
-}
-.notification.warning {
-  border-left: 10px solid #ffc107;
-}
-@keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -60%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
-}
+body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 30px; }
+.container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+h2 { text-align: center; color: #007bff; margin-bottom: 20px; }
+label { font-weight: bold; margin-right: 10px; }
+input[type=text] { padding: 8px; font-size: 16px; width: 200px; }
+button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; }
+.delete-btn { background: #dc3545; color: white; }
+.delete-btn:hover { background: #b02a37; }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+th { background: #007bff; color: white; }
+.notification { position: fixed; top: 65%; left: 50%; transform: translate(-50%, -50%); background: #f44336; color: white; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); padding: 20px 30px; z-index: 9999; display: none; font-size: 18px; text-align: center; animation: fadeIn 0.3s ease; }
+.notification.show { display: block; }
+.notification.error { background: #e63946; }
+.notification.warning { background: #ff9800; }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -60%); } to { opacity: 1; transform: translate(-50%, -50%); } }
+.row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h2>📦 Gudang Penyimpanan 存放位置</h2>
-
-  <div>
-    <label>Tempat 存放位置:</label>
-    <input type="text" id="placeInput" placeholder="">
+  
+  <div class="row">
+    <label>打包人員 :</label>
+    <input type="text" id="packerCodeInput" placeholder="">
+    <span id="packerName" style="font-weight:bold;color:#ff98007bff;"></span>
   </div>
-  <br>
-  <div>
+  
+  <div class="row">
+    <label>Tempat 存放位置:</label>
+    <input type="text" id="placeInput" placeholder="" disabled>
+  </div>
+
+  <div class="row">
     <label>Barcode:</label>
-    <input type="text" id="barcodeInput" autofocus placeholder="">
+    <input type="text" id="barcodeInput" placeholder="" disabled>
   </div>
 
   <table>
@@ -118,6 +53,7 @@ th {
         <th>Customer</th>
         <th>Company No</th>
         <th>Qty</th>
+        <th>Packer</th>
         <th>Status</th>
         <th>Aksi</th>
       </tr>
@@ -126,7 +62,6 @@ th {
   </table>
 </div>
 
-<!-- 🔔 Elemen notifikasi -->
 <div id="popup" class="notification"></div>
 
 <script>
@@ -134,108 +69,111 @@ const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const packerCodeInput = document.getElementById('packerCodeInput');
+const packerNameDisplay = document.getElementById('packerName');
+const placeInput = document.getElementById('placeInput');
 const barcodeInput = document.getElementById('barcodeInput');
 const tableBody = document.getElementById('tableBody');
 let lastCustomer = null;
 let counter = 1;
+let currentPackerName = null;
 
-// 🔔 Fungsi tampilkan notifikasi
-function showPopup(message, type = "info", duration = 5000) {
+function showPopup(message, type = "error", duration = 4000) {
   const popup = document.getElementById('popup');
   popup.textContent = message;
   popup.className = `notification show ${type}`;
-  setTimeout(() => {
-    popup.classList.remove('show');
-  }, duration);
+  setTimeout(() => popup.classList.remove('show'), duration);
 }
 
-barcodeInput.addEventListener('change', async () => {
-  const barcode = barcodeInput.value.trim();
-  const place = document.getElementById('placeInput').value.trim();
-  barcodeInput.disabled = true;
+window.onload = () => packerCodeInput.focus();
 
-  if (!barcode) {
-    showPopup('❌ Masukkan barcode terlebih dahulu!', 'error');
-    barcodeInput.disabled = false;
-    barcodeInput.focus();
-    return;
-  }
+// 🔹 Scan karyawan
+packerCodeInput.addEventListener('change', async () => {
+  const code = packerCodeInput.value.trim();
+  if (!code) return;
 
-  // 🔍 Cek apakah barcode sudah ada di gudang_penyimpanan
-  const { data: existing } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .select('barcode')
-    .eq('barcode', barcode)
-    .maybeSingle();
-
-  if (existing) {
-    showPopup(`⚠️ Barcode ${barcode} sudah tersimpan sebelumnya.`, 'warning');
-    barcodeInput.value = '';
-    barcodeInput.disabled = false;
-    barcodeInput.focus();
-    return;
-  }
-
-  // 🔍 Cari data di tabel "data"
   const { data, error } = await supabaseClient
-    .from('data')
-    .select('*')
-    .eq('box_number', barcode)
-    .limit(1)
+    .from('karyawan')
+    .select('nama')
+    .eq('kode', code)
     .single();
 
   if (error || !data) {
-    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan!`, 'error');
-    barcodeInput.disabled = false;
-    barcodeInput.focus();
-    return;
-  }
-
-  // 🔒 Cek konsistensi customer
-  if (lastCustomer && data.customer !== lastCustomer) {
-    showPopup(`❌ Customer berbeda dari sebelumnya!\n(${lastCustomer} ≠ ${data.customer})`, 'error', 3000);
-    barcodeInput.value = '';
-    barcodeInput.disabled = false;
-    barcodeInput.focus();
-    return;
-  }
-
-  // ✅ Simpan ke gudang_penyimpanan
-  const payload = {
-    packaging_board: data.packaging_board,
-    box_number: data.box_number,
-    material_order_number: data.material_order_number,
-    original_material_order_number: data.original_material_order_number,
-    company_number: data.company_number,
-    packaging_quantity: data.packaging_quantity,
-    customer: data.customer,
-    customer_order_number: data.customer_order_number,
-    delivery_order_number: data.delivery_order_number,
-    packaging_time: data.packaging_time,
-    packer: data.packer,
-    barcode: barcode,
-    place: place,
-    saved_at: new Date().toISOString()
-  };
-
-  const { error: insertError } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .insert([payload]);
-
-  if (insertError) {
-    showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
+    showPopup(`❌ Karyawan dengan kode ${code} tidak ditemukan!`, 'error');
+    packerNameDisplay.textContent = '';
+    currentPackerName = null;
+    packerCodeInput.focus();
   } else {
-   showPopup(`✅ Barang ${barcode} berhasil disimpan di ${place}`, 'success');
-    addRowToTable(barcode, data);
-    lastCustomer = data.customer;
+    packerNameDisplay.textContent = data.nama;
+    currentPackerName = data.nama;
+    placeInput.disabled = false;
+    placeInput.focus();
   }
 
-  barcodeInput.value = '';
+  packerCodeInput.value = '';
+});
+
+// 🔹 Input tempat
+placeInput.addEventListener('change', () => {
+  if (!placeInput.value.trim()) {
+    showPopup('⚠️ Tempat penyimpanan belum diisi!', 'warning');
+    return;
+  }
   barcodeInput.disabled = false;
   barcodeInput.focus();
 });
 
-// 🧾 Tambah baris baru di tabel
+// 🔹 Scan barcode (masukkan semua row yang cocok)
+barcodeInput.addEventListener('change', async () => {
+  const barcode = barcodeInput.value.trim();
+  const place = placeInput.value.trim();
+
+  if (!barcode || !place || !currentPackerName) {
+    showPopup('⚠️ Lengkapi data karyawan & tempat sebelum scan!', 'warning');
+    barcodeInput.value = '';
+    return;
+  }
+
+  // Ambil semua row dengan box_number sama
+  const { data, error } = await supabaseClient
+    .from('data')
+    .select('*')
+    .eq('box_number', barcode);
+
+  if (error || !data || data.length === 0) {
+    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan!`, 'error');
+    barcodeInput.value = '';
+    barcodeInput.focus();
+    return;
+  }
+
+  // Simpan semua row ke gudang_penyimpanan
+  for (let row of data) {
+    const payload = {
+      ...row,
+      barcode,
+      place,
+      packer: currentPackerName,
+      saved_at: new Date().toISOString()
+    };
+
+    const { error: insertError } = await supabaseClient
+      .from('gudang_penyimpanan')
+      .insert([payload]);
+
+    if (insertError) {
+      showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
+    } else {
+      addRowToTable(barcode, row);
+      lastCustomer = row.customer;
+    }
+  }
+
+  barcodeInput.value = '';
+  barcodeInput.focus();
+});
+
+// Tambah baris tabel
 function addRowToTable(barcode, data) {
   const row = document.createElement('tr');
   row.innerHTML = `
@@ -244,6 +182,7 @@ function addRowToTable(barcode, data) {
     <td>${data.customer || '-'}</td>
     <td>${data.company_number || '-'}</td>
     <td>${data.packaging_quantity || '-'}</td>
+    <td>${currentPackerName || '-'}</td>
     <td style="color:green;font-weight:bold;">✔️ Disimpan</td>
     <td><button class="delete-btn" onclick="deleteRow('${barcode}', this)">Hapus</button></td>
   `;
@@ -251,29 +190,20 @@ function addRowToTable(barcode, data) {
   updateRowNumbers();
 }
 
-// 🗑️ Hapus data dari Supabase + tabel
+// Hapus data
 async function deleteRow(barcode, btn) {
   if (!confirm(`Yakin ingin menghapus barcode ${barcode}?`)) return;
-
-  const { error } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .delete()
-    .eq('barcode', barcode);
-
-  if (error) {
-    showPopup('❌ Gagal menghapus: ' + error.message, 'error');
-  } else {
+  const { error } = await supabaseClient.from('gudang_penyimpanan').delete().eq('barcode', barcode);
+  if (error) showPopup('❌ Gagal menghapus: ' + error.message, 'error');
+  else {
     btn.closest('tr').remove();
     updateRowNumbers();
-    showPopup(`🗑️ Data ${barcode} telah dihapus.`, 'warning');
+    showPopup(`🗑️ Data ${barcode} dihapus.`, 'warning');
   }
 }
 
-// 🔢 Update nomor urut setelah hapus
 function updateRowNumbers() {
-  [...tableBody.rows].forEach((row, index) => {
-    row.cells[0].textContent = index + 1;
-  });
+  [...tableBody.rows].forEach((row, index) => row.cells[0].textContent = index + 1);
 }
 </script>
 </body>
