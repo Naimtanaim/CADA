@@ -25,6 +25,7 @@
     .toolbar button {
       padding: 5px 12px;
       font-size: 13px;
+      margin-right: 5px;
     }
     table {
       width: 100%;
@@ -39,22 +40,40 @@
     th {
       background-color: #e0e0e0;
     }
-    tr:nth-child(even) {
-      background-color: #fff;
-    }
-    tr:nth-child(odd) {
-      background-color: #f5f5f5;
-    }
+    tr:nth-child(even) { background-color: #fff; }
+    tr:nth-child(odd) { background-color: #f5f5f5; }
     .fixed-header {
       position: sticky;
       top: 0;
       background-color: #e0e0e0;
       z-index: 2;
     }
-    @media (max-width: 768px) {
-      body { font-size: 12px; padding: 5px; }
-      .toolbar input { width: 100px; }
-      table { font-size: 11px; }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 15px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+    }
+    .modal-content input {
+      width: 100%;
+      margin: 4px 0;
+      padding: 5px;
+    }
+    .modal-content button {
+      margin-top: 10px;
+      padding: 6px 12px;
     }
   </style>
 </head>
@@ -67,12 +86,10 @@
     公司號: <input type="text" id="filter_company_number" />
     備料單號: <input type="text" id="filter_material_order_number" />
     <button id="btnSearch">查詢</button>
+    <button id="btnEditSelected" style="background-color:#007bff;color:white;">編輯選取</button>
     <button id="btnDeleteSelected" style="color: red;">刪除選取</button>
     <button onclick="window.location.href='input.html'">新增出貨資料</button>
-    <a href="import.html">
-  <button>Upload CSV</button>
-</a>
-
+    <a href="import.html"><button>Upload CSV</button></a>
   </div>
 
   <table>
@@ -97,10 +114,25 @@
     </tbody>
   </table>
 
+  <!-- Modal Edit -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h4>編輯資料</h4>
+      <input type="hidden" id="edit_id">
+      <label>包裝機板:</label><input type="text" id="edit_packaging_board">
+      <label>箱號:</label><input type="text" id="edit_box_number">
+      <label>備料單號:</label><input type="text" id="edit_material_order_number">
+      <label>公司號:</label><input type="text" id="edit_company_number">
+      <label>客戶:</label><input type="text" id="edit_customer">
+      <label>包裝數量:</label><input type="number" id="edit_packaging_quantity">
+      <button id="btnSaveEdit">儲存變更</button>
+      <button onclick="closeModal()">取消</button>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g';
-
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -111,30 +143,16 @@
       const material_order_number = document.getElementById('filter_material_order_number').value;
 
       let query = supabaseClient.from('data').select('*');
-
-      if (packaging_board) {
-        query = query.ilike('packaging_board', `%${packaging_board}%`);
-      }
-      if (customer) {
-        query = query.ilike('customer', `%${customer}%`);
-      }
-      if (company_number) {
-        query = query.ilike('company_number', `%${company_number}%`);
-      }
-      if (material_order_number) {
-        query = query.ilike('material_order_number', `%${material_order_number}%`);
-      }
+      if (packaging_board) query = query.ilike('packaging_board', `%${packaging_board}%`);
+      if (customer) query = query.ilike('customer', `%${customer}%`);
+      if (company_number) query = query.ilike('company_number', `%${company_number}%`);
+      if (material_order_number) query = query.ilike('material_order_number', `%${material_order_number}%`);
 
       const { data, error } = await query.order('id', { ascending: false });
-
-      if (error) {
-        alert('查詢錯誤: ' + error.message);
-        return;
-      }
-
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
 
+      if (error) return alert('查詢錯誤: ' + error.message);
       if (!data || data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="12">無資料顯示</td></tr>';
         return;
@@ -163,32 +181,58 @@
     async function deleteSelectedRows() {
       const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]:checked');
       const deleteIds = Array.from(checkboxes).map(cb => cb.dataset.id);
+      if (deleteIds.length === 0) return alert('請選擇要刪除的項目');
+      if (!confirm(`確定刪除 ${deleteIds.length} 筆資料嗎？`)) return;
 
-      if (deleteIds.length === 0) {
-        alert('請選擇要刪除的項目');
-        return;
-      }
-
-      if (!confirm(`確定刪除 ${deleteIds.length} 筆資料嗎？`)) {
-        return;
-      }
-
-      const { error } = await supabaseClient
-        .from('data')
-        .delete()
-        .in('id', deleteIds);
-
-      if (error) {
-        alert('刪除錯誤: ' + error.message);
-        return;
-      }
-
-      fetchShipments();
+      const { error } = await supabaseClient.from('data').delete().in('id', deleteIds);
+      if (error) alert('刪除錯誤: ' + error.message);
+      else fetchShipments();
     }
+
+    // buka modal edit untuk baris yang dipilih
+    async function openSelectedEdit() {
+      const selected = document.querySelectorAll('tbody input[type="checkbox"]:checked');
+      if (selected.length === 0) return alert('請選擇要編輯的項目');
+      if (selected.length > 1) return alert('一次只能編輯一筆資料');
+
+      const id = selected[0].dataset.id;
+      const { data, error } = await supabaseClient.from('data').select('*').eq('id', id).single();
+      if (error) return alert('讀取資料失敗: ' + error.message);
+
+      document.getElementById('edit_id').value = data.id;
+      document.getElementById('edit_packaging_board').value = data.packaging_board || '';
+      document.getElementById('edit_box_number').value = data.box_number || '';
+      document.getElementById('edit_material_order_number').value = data.material_order_number || '';
+      document.getElementById('edit_company_number').value = data.company_number || '';
+      document.getElementById('edit_customer').value = data.customer || '';
+      document.getElementById('edit_packaging_quantity').value = data.packaging_quantity || '';
+      document.getElementById('editModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').style.display = 'none';
+    }
+
+    document.getElementById('btnSaveEdit').addEventListener('click', async () => {
+      const id = document.getElementById('edit_id').value;
+      const updates = {
+        packaging_board: document.getElementById('edit_packaging_board').value,
+        box_number: document.getElementById('edit_box_number').value,
+        material_order_number: document.getElementById('edit_material_order_number').value,
+        company_number: document.getElementById('edit_company_number').value,
+        customer: document.getElementById('edit_customer').value,
+        packaging_quantity: parseInt(document.getElementById('edit_packaging_quantity').value) || null
+      };
+      const { error } = await supabaseClient.from('data').update(updates).eq('id', id);
+      if (error) return alert('更新失敗: ' + error.message);
+      alert('✅ 資料已更新');
+      closeModal();
+      fetchShipments();
+    });
 
     document.getElementById('btnSearch').addEventListener('click', fetchShipments);
     document.getElementById('btnDeleteSelected').addEventListener('click', deleteSelectedRows);
-
+    document.getElementById('btnEditSelected').addEventListener('click', openSelectedEdit);
     fetchShipments();
   </script>
 </body>
