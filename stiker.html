@@ -45,7 +45,7 @@
   }
 
   #stickerContainer {
-    height: calc(100vh - 80px); /* sisa layar */
+    height: calc(100vh - 80px);
     overflow-y: auto;
     padding: 10px;
   }
@@ -115,6 +115,10 @@ const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Fokus input selalu siap scan
+const barcodeInput = document.getElementById("barcodeInput");
+barcodeInput.focus();
+
 async function loadSticker(barcode) {
   if (!barcode) return;
 
@@ -157,9 +161,12 @@ async function loadSticker(barcode) {
     const noEl = div.querySelector(".no");
     makeDraggable(noEl);
   });
+
+  barcodeInput.value = ""; // kosongkan input setelah scan
+  barcodeInput.focus();     // tetap fokus
 }
 
-// --- Drag & Drop ---
+// Drag & Drop NO
 function makeDraggable(el) {
   let isDragging = false;
   let offsetX = 0;
@@ -191,13 +198,15 @@ function makeDraggable(el) {
   });
 }
 
-// --- Event listeners ---
-document.getElementById("barcodeInput").addEventListener("keypress", e => {
+// Event listeners
+barcodeInput.addEventListener("keypress", e => {
   if (e.key === "Enter") loadSticker(e.target.value.trim());
 });
-document.getElementById("barcodeInput").addEventListener("input", e => {
+
+barcodeInput.addEventListener("input", e => {
   loadSticker(e.target.value.trim());
 });
 </script>
+
 </body>
 </html>
