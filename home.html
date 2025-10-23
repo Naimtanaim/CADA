@@ -2,25 +2,110 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>出貨課1.01 - 可刪除</title>
+  <title>出貨課1.03 - 可編輯可刪除</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Microsoft JhengHei', sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; font-size: 13px; }
+    body {
+      font-family: 'Microsoft JhengHei', sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f5f5f5;
+      font-size: 13px;
+    }
     .container { display: flex; height: 100vh; overflow: hidden; }
-    .sidebar { width: 180px; background-color: #e0e0e0; padding: 8px; border-right: 1px solid #ccc; overflow-y: auto; }
-    .sidebar button { display: block; width: 100%; margin: 4px 0; padding: 6px; font-size: 12px; cursor: pointer; }
-    .main { flex: 1; padding: 10px; overflow: auto; }
-    .search-bar input { margin: 4px 2px; padding: 4px; font-size: 12px; width: 100px; }
-    .search-bar { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+    .sidebar {
+      width: 180px; background-color: #e0e0e0;
+      padding: 8px; border-right: 1px solid #ccc;
+      overflow-y: auto;
+    }
+    .sidebar button {
+      display: block; width: 100%;
+      margin: 4px 0; padding: 6px;
+      font-size: 12px; cursor: pointer;
+    }
+    .main {
+      flex: 1; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    h3 {
+      margin: 0; padding: 10px;
+      background: #3f51b5; color: white;
+      display: flex; justify-content: space-between; align-items: center;
+      position: sticky; top: 0; z-index: 100;
+    }
+
+    .search-bar {
+      background: #f0f0f0;
+      padding: 8px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+      border-bottom: 1px solid #ccc;
+      position: sticky; top: 45px; z-index: 99;
+    }
+    .search-bar input { padding: 4px; width: 100px; font-size: 12px; }
     button { cursor: pointer; font-size: 12px; padding: 4px 8px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+    .table-container { flex: 1; overflow: auto; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
     th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
-    th { background-color: #f0f0f0; position: sticky; top: 0; z-index: 1; }
+    th {
+      background-color: #e0e0e0;
+      position: sticky; top: 0px; z-index: 5;
+    }
     tr:nth-child(even) { background-color: #fff; }
     tr:nth-child(odd) { background-color: #f9f9f9; }
-    h3 { margin-top: 0; font-size: 16px; display: flex; justify-content: space-between; align-items: center; }
-    @media print { .sidebar, .search-bar, button, h3 button { display: none; } table { font-size: 10px; } body { background: white; } }
+
+    #editModal {
+      display: none;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center; align-items: center;
+      z-index: 200;
+    }
+    #editModal .modal-content {
+      background: white; padding: 20px; border-radius: 6px;
+      width: 300px; text-align: center;
+    }
+    #editModal input {
+      width: 90%; padding: 6px; margin: 6px 0;
+    }
+
+    /* ======================= */
+    /* STYLE UNTUK PRINT HANYA TABEL */
+    /* ======================= */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      .main, .main * {
+        visibility: visible;
+      }
+      .sidebar, .search-bar, h3 button {
+        display: none !important;
+      }
+      h3 {
+        position: static;
+        color: black;
+        background: none;
+        text-align: center;
+        border-bottom: 2px solid #000;
+      }
+      table {
+        font-size: 9px;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th, td {
+        border: 2px solid #000;
+        padding: 3px;
+      }
+      th {
+        background-color: #ddd !important;
+        -webkit-print-color-adjust: exact;
+      }
+    }
   </style>
 </head>
 <body>
@@ -33,44 +118,62 @@
     <div class="main">
       <h3>
         出貨課訂單總進度
-        <button onclick="window.print()">🖨️ 列印資料</button>
+        <button onclick="window.print()">🖨️ 列印</button>
       </h3>
 
       <div class="search-bar">
-        客戶: <input type="text" id="searchCustomer" placeholder="" />
-        客戶訂單號: <input type="text" id="searchOrder" placeholder="" />
-        送貨訂單號: <input type="text" id="searchDelivery" placeholder="" />
-        公司別: <input type="text" id="searchCompany" placeholder="" />
-        存放位置: <input type="text" id="searchPlace" placeholder="" />
+        客戶: <input type="text" id="searchCustomer" />
+        客戶訂單號: <input type="text" id="searchOrder" />
+        送貨訂單號: <input type="text" id="searchDelivery" />
+        公司別: <input type="text" id="searchCompany" />
+        存放位置: <input type="text" id="searchPlace" />
         <button onclick="loadData()">🔄 重新整理</button>
+        <button onclick="massEdit()">✏️ 編輯所選</button>
         <button onclick="deleteSelected()">🗑️ 刪除所選</button>
       </div>
 
-      <p id="countInfo">載入中...</p>
+      <p id="countInfo" style="margin:6px 10px;">載入中...</p>
 
-      <table>
-        <thead>
-          <tr>
-            <th><input type="checkbox" id="selectAll" onchange="toggleAll(this)" /></th>
-            <th>包裝機板</th>
-            <th>箱號</th>
-            <th>備料單號</th>
-            <th>原始備料單號</th>
-            <th>公司號</th>
-            <th>包裝數量</th>
-            <th>客戶</th>
-            <th>客戶訂單號</th>
-            <th>送貨訂單號</th>
-            <th>打包時間</th>
-            <th>打包人員</th>
-            <th>存放位置</th>
-            <th>存檔時間</th>
-          </tr>
-        </thead>
-        <tbody id="dataBody">
-          <tr><td colspan="14">資料載入中...</td></tr>
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selectAll" onchange="toggleAll(this)" /></th>
+              <th>NO</th>
+              <th>箱號</th>
+              <th>備料單號</th>
+              <th>原始備料單號</th>
+              <th>公司號</th>
+              <th>包裝數量</th>
+              <th>客戶</th>
+              <th>客戶訂單號</th>
+              <th>送貨訂單號</th>
+              <th>打包時間</th>
+              <th>打包人員</th>
+              <th>存放位置</th>
+              <th>存檔時間</th>
+            </tr>
+          </thead>
+          <tbody id="dataBody">
+            <tr><td colspan="14">資料載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit -->
+  <div id="editModal">
+    <div class="modal-content">
+      <h4>✏️ 批次修改</h4>
+      <label>NO：</label><br>
+      <input type="text" id="editBoard" placeholder=""><br>
+      <label>打包人員：</label><br>
+      <input type="text" id="editPacker" placeholder=""><br>
+      <label>存放位置：</label><br>
+      <input type="text" id="editPlace" placeholder=""><br>
+      <button onclick="applyMassEdit()">💾 儲存變更</button>
+      <button onclick="closeModal()">❌ 取消</button>
     </div>
   </div>
 
@@ -81,13 +184,13 @@
 
     async function loadData() {
       const tbody = document.getElementById("dataBody");
+      tbody.innerHTML = "<tr><td colspan='14'>🔄 載入中...</td></tr>";
+
       const c = document.getElementById("searchCustomer").value.trim();
       const o = document.getElementById("searchOrder").value.trim();
       const d = document.getElementById("searchDelivery").value.trim();
       const company = document.getElementById("searchCompany").value.trim();
       const place = document.getElementById("searchPlace").value.trim();
-
-      tbody.innerHTML = "<tr><td colspan='14'>🔄 正在載入資料...</td></tr>";
 
       let query = supabaseClient.from("gudang_penyimpanan").select("*").order("saved_at", { ascending: false });
 
@@ -98,7 +201,6 @@
       if (place) query = query.ilike("place", `%${place}%`);
 
       const { data, error } = await query;
-
       if (error) {
         tbody.innerHTML = `<tr><td colspan="14" style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
         return;
@@ -110,7 +212,7 @@
         return;
       }
 
-      document.getElementById("countInfo").textContent = `📦 目前共有 ${data.length} 筆資料`;
+      document.getElementById("countInfo").textContent = `📦 共有 ${data.length} 筆`;
 
       tbody.innerHTML = "";
       data.forEach(row => {
@@ -135,28 +237,62 @@
       });
     }
 
-    // Toggle centang semua
     function toggleAll(master) {
       document.querySelectorAll(".selectRow").forEach(cb => cb.checked = master.checked);
     }
 
-    // Hapus semua yang dicentang
     async function deleteSelected() {
       const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
-      if (checkedBoxes.length === 0) return alert("⚠️ 請先選擇要刪除的資料");
-
-      if (!confirm(`確定要刪除 ${checkedBoxes.length} 筆資料嗎？`)) return;
+      if (checkedBoxes.length === 0) return alert("⚠️ 請先選擇資料");
+      if (!confirm(`確定刪除 ${checkedBoxes.length} 筆資料？`)) return;
 
       const ids = checkedBoxes.map(cb => cb.dataset.id);
-
       const { error } = await supabaseClient.from("gudang_penyimpanan").delete().in("id", ids);
       if (error) return alert("❌ 刪除失敗: " + error.message);
 
-      // Hapus dari tabel HTML
       checkedBoxes.forEach(cb => cb.closest("tr").remove());
-
       document.getElementById("selectAll").checked = false;
       alert(`🗑️ 已刪除 ${ids.length} 筆資料`);
+    }
+
+    function massEdit() {
+      const checked = document.querySelectorAll(".selectRow:checked");
+      if (checked.length === 0) return alert("⚠️ 請先選擇要編輯的資料");
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("editModal").style.display = "none";
+      document.getElementById("editBoard").value = "";
+      document.getElementById("editPacker").value = "";
+      document.getElementById("editPlace").value = "";
+    }
+
+    async function applyMassEdit() {
+      const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
+      const ids = checkedBoxes.map(cb => cb.dataset.id);
+      if (ids.length === 0) return alert("⚠️ 未選擇資料");
+
+      const board = document.getElementById("editBoard").value.trim();
+      const packer = document.getElementById("editPacker").value.trim();
+      const place = document.getElementById("editPlace").value.trim();
+      if (!board && !packer && !place) return alert("⚠️ 請輸入要更新的內容");
+
+      const updateData = {};
+      if (board) updateData.packaging_board = board;
+      if (packer) updateData.packer = packer;
+      if (place) updateData.place = place;
+
+      const { error } = await supabaseClient
+        .from("gudang_penyimpanan")
+        .update(updateData)
+        .in("id", ids);
+
+      if (error) return alert("❌ 更新失敗: " + error.message);
+
+      closeModal();
+      alert(`✅ 已更新 ${ids.length} 筆資料`);
+      loadData();
     }
 
     document.addEventListener("DOMContentLoaded", loadData);
