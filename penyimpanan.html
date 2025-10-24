@@ -21,7 +21,7 @@ body {
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   display: flex;
   flex-direction: column;
-  height: 100vh; /* biar tabel punya ruang untuk scroll */
+  height: 100vh;
 }
 h2 {
   text-align: center;
@@ -102,6 +102,16 @@ th {
   gap: 15px;
   margin-bottom: 10px;
 }
+.total-box {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+  background: #e3f2fd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  color: #007bff;
+}
 </style>
 </head>
 <body>
@@ -124,12 +134,14 @@ th {
     <input type="text" id="barcodeInput" placeholder="" disabled>
   </div>
 
+  <!-- 🔹 Total unik -->
+  <div class="total-box">Total Box 总箱数: <span id="totalCount">0</span></div>
+
   <!-- 🔹 Tabel scrollable -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
-          <th>No</th>
           <th>Barcode</th>
           <th>Customer</th>
           <th>Company No</th>
@@ -156,11 +168,13 @@ const packerNameDisplay = document.getElementById('packerName');
 const placeInput = document.getElementById('placeInput');
 const barcodeInput = document.getElementById('barcodeInput');
 const tableBody = document.getElementById('tableBody');
-let lastCustomer = null;
-let counter = 1;
-let currentPackerName = null;
+const totalCount = document.getElementById('totalCount');
 
-function showPopup(message, type = "error", duration = 4000) {
+let currentPackerName = null;
+let lastCustomer = null;
+let scannedBarcodes = new Set(); // untuk menghitung unik
+
+function showPopup(message, type = "error", duration = 5000) {
   const popup = document.getElementById('popup');
   popup.textContent = message;
   popup.className = `notification show ${type}`;
@@ -205,7 +219,7 @@ placeInput.addEventListener('change', () => {
   barcodeInput.focus();
 });
 
-// 🔹 Scan barcode (masukkan semua row yang cocok)
+// 🔹 Scan barcode
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
   const place = placeInput.value.trim();
@@ -236,7 +250,15 @@ barcodeInput.addEventListener('change', async () => {
     return;
   }
 
-  // 🔹 Simpan data
+  // 🔹 Cek barcode duplikat
+  if (scannedBarcodes.has(barcode)) {
+    showPopup(`⚠️ Barcode ${barcode} sudah pernah di-scan!`, 'warning');
+    barcodeInput.value = '';
+    barcodeInput.focus();
+    return;
+  }
+
+  // 🔹 Simpan ke Supabase
   for (let row of data) {
     const payload = {
       ...row,
@@ -254,7 +276,9 @@ barcodeInput.addEventListener('change', async () => {
       showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
     } else {
       addRowToTable(barcode, row);
-      lastCustomer = row.customer; // simpan customer pertama
+      lastCustomer = row.customer;
+      scannedBarcodes.add(barcode);
+      updateTotalCount();
     }
   }
 
@@ -262,11 +286,10 @@ barcodeInput.addEventListener('change', async () => {
   barcodeInput.focus();
 });
 
-// Tambah baris tabel
+// 🔹 Tambah baris tabel
 function addRowToTable(barcode, data) {
   const row = document.createElement('tr');
   row.innerHTML = `
-    <td>${counter++}</td>
     <td>${barcode}</td>
     <td>${data.customer || '-'}</td>
     <td>${data.company_number || '-'}</td>
@@ -276,10 +299,9 @@ function addRowToTable(barcode, data) {
     <td><button class="delete-btn" onclick="deleteRow('${barcode}', this)">Hapus</button></td>
   `;
   tableBody.prepend(row);
-  updateRowNumbers();
 }
 
-// Hapus data
+// 🔹 Hapus data
 async function deleteRow(barcode, btn) {
   if (!confirm(`Yakin ingin menghapus barcode ${barcode}?`)) return;
   const { error } = await supabaseClient
@@ -290,13 +312,15 @@ async function deleteRow(barcode, btn) {
   if (error) showPopup('❌ Gagal menghapus: ' + error.message, 'error');
   else {
     btn.closest('tr').remove();
-    updateRowNumbers();
+    scannedBarcodes.delete(barcode);
+    updateTotalCount();
     showPopup(`🗑️ Data ${barcode} dihapus.`, 'warning');
   }
 }
 
-function updateRowNumbers() {
-  [...tableBody.rows].forEach((row, index) => row.cells[0].textContent = index + 1);
+// 🔹 Update total unik
+function updateTotalCount() {
+  totalCount.textContent = scannedBarcodes.size;
 }
 </script>
 </body>
