@@ -6,23 +6,102 @@
 <title>Penyimpanan Barang Otomatis</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-body { font-family: Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 30px; }
-.container { max-width: 900px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-h2 { text-align: center; color: #007bff; margin-bottom: 20px; }
-label { font-weight: bold; margin-right: 10px; }
-input[type=text] { padding: 8px; font-size: 16px; width: 200px; }
-button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; }
-.delete-btn { background: #dc3545; color: white; }
-.delete-btn:hover { background: #b02a37; }
-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-th { background: #007bff; color: white; }
-.notification { position: fixed; top: 65%; left: 50%; transform: translate(-50%, -50%); background: #f44336; color: white; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); padding: 20px 30px; z-index: 9999; display: none; font-size: 18px; text-align: center; animation: fadeIn 0.3s ease; }
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f6f9;
+  margin: 0;
+  padding: 30px;
+}
+.container {
+  max-width: 1200px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* biar tabel punya ruang untuk scroll */
+}
+h2 {
+  text-align: center;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+label {
+  font-weight: bold;
+  margin-right: 10px;
+}
+input[type=text] {
+  padding: 8px;
+  font-size: 16px;
+  width: 200px;
+}
+button {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.delete-btn {
+  background: #dc3545;
+  color: white;
+}
+.delete-btn:hover {
+  background: #b02a37;
+}
+.table-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  margin-top: 15px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  text-align: center;
+}
+th {
+  background: #007bff;
+  color: white;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.notification {
+  position: fixed;
+  top: 65%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f44336;
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  padding: 20px 30px;
+  z-index: 9999;
+  display: none;
+  font-size: 18px;
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+}
 .notification.show { display: block; }
 .notification.error { background: #e63946; }
 .notification.warning { background: #ff9800; }
-@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -60%); } to { opacity: 1; transform: translate(-50%, -50%); } }
-.row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
 </style>
 </head>
 <body>
@@ -32,7 +111,7 @@ th { background: #007bff; color: white; }
   <div class="row">
     <label>打包人員 :</label>
     <input type="text" id="packerCodeInput" placeholder="">
-    <span id="packerName" style="font-weight:bold;color:#ff98007bff;"></span>
+    <span id="packerName" style="font-weight:bold;color:#ff9800;"></span>
   </div>
   
   <div class="row">
@@ -45,21 +124,24 @@ th { background: #007bff; color: white; }
     <input type="text" id="barcodeInput" placeholder="" disabled>
   </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>No</th>
-        <th>Barcode</th>
-        <th>Customer</th>
-        <th>Company No</th>
-        <th>Qty</th>
-        <th>Packer</th>
-        <th>Status</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
+  <!-- 🔹 Tabel scrollable -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Barcode</th>
+          <th>Customer</th>
+          <th>Company No</th>
+          <th>Qty</th>
+          <th>Packer</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <div id="popup" class="notification"></div>
@@ -134,7 +216,6 @@ barcodeInput.addEventListener('change', async () => {
     return;
   }
 
-  // Ambil semua row dengan box_number sama
   const { data, error } = await supabaseClient
     .from('data')
     .select('*')
@@ -147,7 +228,15 @@ barcodeInput.addEventListener('change', async () => {
     return;
   }
 
-  // Simpan semua row ke gudang_penyimpanan
+  // 🔸 Cek konsistensi Customer
+  if (lastCustomer && data[0].customer !== lastCustomer) {
+    showPopup(`⚠️ 客戶 (Customer) berbeda!\nTidak bisa disimpan karena berbeda dengan sebelumnya (${lastCustomer}).`, 'error');
+    barcodeInput.value = '';
+    barcodeInput.focus();
+    return;
+  }
+
+  // 🔹 Simpan data
   for (let row of data) {
     const payload = {
       ...row,
@@ -165,7 +254,7 @@ barcodeInput.addEventListener('change', async () => {
       showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
     } else {
       addRowToTable(barcode, row);
-      lastCustomer = row.customer;
+      lastCustomer = row.customer; // simpan customer pertama
     }
   }
 
@@ -193,7 +282,11 @@ function addRowToTable(barcode, data) {
 // Hapus data
 async function deleteRow(barcode, btn) {
   if (!confirm(`Yakin ingin menghapus barcode ${barcode}?`)) return;
-  const { error } = await supabaseClient.from('gudang_penyimpanan').delete().eq('barcode', barcode);
+  const { error } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .delete()
+    .eq('barcode', barcode);
+
   if (error) showPopup('❌ Gagal menghapus: ' + error.message, 'error');
   else {
     btn.closest('tr').remove();
