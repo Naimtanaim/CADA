@@ -172,7 +172,7 @@ const totalCount = document.getElementById('totalCount');
 
 let currentPackerName = null;
 let lastCustomer = null;
-let scannedBarcodes = new Set(); // untuk menghitung unik
+let scannedBarcodes = new Set();
 
 function showPopup(message, type = "error", duration = 5000) {
   const popup = document.getElementById('popup');
@@ -219,7 +219,7 @@ placeInput.addEventListener('change', () => {
   barcodeInput.focus();
 });
 
-// 🔹 Scan barcode
+// 🔹 Scan barcode (pindah otomatis)
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
   const place = placeInput.value.trim();
@@ -236,14 +236,16 @@ barcodeInput.addEventListener('change', async () => {
     .eq('box_number', barcode);
 
   if (error || !data || data.length === 0) {
-    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan!`, 'error');
+    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan di tabel "data"!`, 'error');
     barcodeInput.value = '';
     barcodeInput.focus();
     return;
   }
 
-  // 🔸 Cek konsistensi Customer
-  if (lastCustomer && data[0].customer !== lastCustomer) {
+  const row = data[0];
+
+  // 🔸 Cek konsistensi customer
+  if (lastCustomer && row.customer !== lastCustomer) {
     showPopup(`⚠️ 客戶 (Customer) berbeda!\nTidak bisa disimpan karena berbeda dengan sebelumnya (${lastCustomer}).`, 'error');
     barcodeInput.value = '';
     barcodeInput.focus();
@@ -258,29 +260,43 @@ barcodeInput.addEventListener('change', async () => {
     return;
   }
 
-  // 🔹 Simpan ke Supabase
-  for (let row of data) {
-    const payload = {
-      ...row,
-      barcode,
-      place,
-      packer: currentPackerName,
-      saved_at: new Date().toISOString()
-    };
+  // 🔹 Siapkan data untuk disimpan
+  const payload = {
+    ...row,
+    barcode,
+    place,
+    packer: currentPackerName,
+    saved_at: new Date().toISOString()
+  };
 
-    const { error: insertError } = await supabaseClient
-      .from('gudang_penyimpanan')
-      .insert([payload]);
+  // 🔹 1. Simpan ke gudang_penyimpanan
+  const { error: insertError } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .insert([payload]);
 
-    if (insertError) {
-      showPopup(`❌ Gagal menyimpan: ${insertError.message}`, 'error');
-    } else {
-      addRowToTable(barcode, row);
-      lastCustomer = row.customer;
-      scannedBarcodes.add(barcode);
-      updateTotalCount();
-    }
+  if (insertError) {
+    showPopup(`❌ Gagal menyimpan ke gudang_penyimpanan: ${insertError.message}`, 'error');
+    barcodeInput.value = '';
+    return;
   }
+
+  // 🔹 2. Hapus dari data asli (tabel data)
+  const { error: deleteError } = await supabaseClient
+    .from('data')
+    .delete()
+    .eq('box_number', barcode);
+
+  if (deleteError) {
+    showPopup(`⚠️ Gagal menghapus dari tabel data: ${deleteError.message}`, 'warning');
+  } else {
+  //  showPopup(`✅ Data ${barcode} berhasil dipindahkan ke gudang_penyimpanan!`, 'success');
+  }
+
+  // 🔹 Tambahkan ke tabel tampilan
+  addRowToTable(barcode, row);
+  lastCustomer = row.customer;
+  scannedBarcodes.add(barcode);
+  updateTotalCount();
 
   barcodeInput.value = '';
   barcodeInput.focus();
@@ -301,21 +317,55 @@ function addRowToTable(barcode, data) {
   tableBody.prepend(row);
 }
 
-// 🔹 Hapus data
+// 🔹 Hapus data dan kembalikan ke tabel data
 async function deleteRow(barcode, btn) {
-  if (!confirm(`Yakin ingin menghapus barcode ${barcode}?`)) return;
-  const { error } = await supabaseClient
+  if (!confirm(`Yakin ingin menghapus barcode ${barcode} dari penyimpanan?`)) return;
+
+  // 1️⃣ Ambil dulu data dari gudang_penyimpanan
+  const { data, error: getError } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .select('*')
+    .eq('barcode', barcode);
+
+  if (getError || !data || data.length === 0) {
+    showPopup(`❌ Data ${barcode} tidak ditemukan di gudang_penyimpanan!`, 'error');
+    return;
+  }
+
+  const row = data[0];
+
+  // 2️⃣ Hapus dari gudang_penyimpanan
+  const { error: delError } = await supabaseClient
     .from('gudang_penyimpanan')
     .delete()
     .eq('barcode', barcode);
 
-  if (error) showPopup('❌ Gagal menghapus: ' + error.message, 'error');
-  else {
-    btn.closest('tr').remove();
-    scannedBarcodes.delete(barcode);
-    updateTotalCount();
-    showPopup(`🗑️ Data ${barcode} dihapus.`, 'warning');
+  if (delError) {
+    showPopup('❌ Gagal menghapus dari gudang_penyimpanan: ' + delError.message, 'error');
+    return;
   }
+
+  // 3️⃣ Kembalikan ke tabel data
+  const { error: restoreError } = await supabaseClient
+    .from('data')
+    .insert([{
+      box_number: row.barcode,
+      customer: row.customer,
+      company_number: row.company_number,
+      packaging_quantity: row.packaging_quantity,
+      // tambahkan kolom lain sesuai tabel `data`
+    }]);
+
+  if (restoreError) {
+    showPopup(`⚠️ Gagal mengembalikan ke tabel data: ${restoreError.message}`, 'warning');
+  } else {
+    showPopup(`♻️ Data ${barcode} Hapus!`, 'success');
+  }
+
+  // 🔹 Hapus dari tampilan
+  btn.closest('tr').remove();
+  scannedBarcodes.delete(barcode);
+  updateTotalCount();
 }
 
 // 🔹 Update total unik
