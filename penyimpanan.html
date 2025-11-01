@@ -115,6 +115,36 @@ th {
     text-align: center;
   }
 }
+/* 🔹 Tampilan label stiker */
+#printArea {
+  display: none;
+  width: 700px;
+  padding: 15px;
+  background: #fff8e7;
+  border: 2px dashed #f4a261;
+  border-radius: 15px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  margin: 10px auto;
+}
+#printArea h3 {
+  margin: 5px 0;
+  color: #e76f51;
+  font-size: 1.2em;
+}
+#printArea svg {
+  margin: 10px 0;
+  background: #fefae0;
+  padding: 10px;
+  border-radius: 10px;
+}
+#printArea p {
+  margin: 5px 0;
+}
+#printArea #placeText { font-weight: bold; font-size: 1em; color: #264653; }
+#printArea #packerText { font-size: 0.9em; color: #2a9d8f; }
+#printArea #dateText { font-size: 0.8em; color: #6c757d; }
 </style>
 </head>
 <body>
@@ -123,8 +153,7 @@ th {
   <div class="top-bar">
     <h2>📦 Gudang Penyimpanan 存放位置</h2>
     <div style="display:flex;gap:10px;">
-      <button class="print-btn" onclick="printTempat()">🖨 Cetak Tempat</button>
-      <button class="delete-btn" onclick="hapusTerpilih()">🗑 Hapus Terpilih</button>
+      <button class="delete-btn" onclick="hapusTerpilih()"> Hapus Terpilih</button>
     </div>
   </div>
   
@@ -167,7 +196,7 @@ th {
 <div id="popup" class="notification"></div>
 
 <!-- 🔹 Area print label -->
-<div id="printArea" style="display:none;">
+<div id="printArea">
   <h3>📍 Tempat Penyimpanan</h3>
   <svg id="placeBarcode"></svg>
   <p id="placeText"></p>
@@ -192,7 +221,7 @@ let currentPackerName = null;
 let lastCustomer = null;
 let scannedBarcodes = new Set();
 
-function showPopup(message, type = "error", duration = 4000) {
+function showPopup(message, type = "error", duration = 5000) {
   const popup = document.getElementById('popup');
   popup.textContent = message;
   popup.className = `notification show ${type}`;
@@ -236,7 +265,7 @@ placeInput.addEventListener('change', () => {
   barcodeInput.focus();
 });
 
-// 🔹 Scan barcode (PINDAH data dari tabel data ke gudang_penyimpanan)
+// 🔹 Scan barcode → pindahkan semua data barcode sama
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
   const place = placeInput.value.trim();
@@ -246,62 +275,59 @@ barcodeInput.addEventListener('change', async () => {
     return;
   }
 
-  // Cek apakah barcode sudah ada di penyimpanan
-  const { data: existing } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .select('barcode')
-    .eq('barcode', barcode)
-    .maybeSingle();
-
-  if (existing) {
-    showPopup(`⚠️ Barcode ${barcode} sudah ada di penyimpanan!`, 'warning');
-    barcodeInput.value = '';
-    return;
-  }
-
-  // Ambil data lengkap dari tabel asal
-  const { data, error } = await supabaseClient
+  // Ambil semua data dengan barcode sama
+  const { data: rows, error } = await supabaseClient
     .from('data')
     .select('*')
-    .eq('box_number', barcode)
-    .maybeSingle();
+    .eq('box_number', barcode);
 
-  if (error || !data) {
+  if (error || !rows || rows.length === 0) {
     showPopup(`❌ Barcode ${barcode} tidak ditemukan di tabel data!`, 'error');
     barcodeInput.value = '';
     barcodeInput.focus();
     return;
   }
 
-  const row = data;
+  // Cek customer sama dengan lastCustomer (jika sudah ada)
+  if (lastCustomer) {
+    const different = rows.find(r => r.customer !== lastCustomer);
+    if (different) {
+      showPopup(`⚠️ Customer tidak sama dengan sebelumnya (${lastCustomer})!`, 'warning');
+      barcodeInput.value = '';
+      barcodeInput.focus();
+      return;
+    }
+  }
 
-  // Tambahkan kolom pelengkap
-  const payload = {
-    ...row, // salin semua kolom dari tabel data (utuh)
+  // Siapkan payload untuk semua data
+  const payload = rows.map(r => ({
+    ...r,
     barcode,
     place,
     packer: currentPackerName,
     saved_at: new Date().toISOString()
-  };
+  }));
 
-  // Simpan ke gudang_penyimpanan
+  // Simpan semua ke gudang_penyimpanan
   const { error: insertError } = await supabaseClient
     .from('gudang_penyimpanan')
-    .insert([payload]);
+    .insert(payload);
 
   if (insertError) {
     showPopup(`❌ Gagal menyimpan ke penyimpanan: ${insertError.message}`, 'error');
     return;
   }
 
-  // Hapus dari tabel data
+  // Hapus semua dari tabel data
   await supabaseClient.from('data').delete().eq('box_number', barcode);
 
-  addRowToTable(barcode, row);
+  // Tambahkan semua ke tabel HTML
+  payload.forEach(r => addRowToTable(barcode, r));
+
   scannedBarcodes.add(barcode);
-  lastCustomer = row.customer;
+  lastCustomer = rows[0].customer;
   updateTotalCount();
-  //showPopup(`✅ Barcode ${barcode} berhasil dipindah ke penyimpanan!`, 'success');
+  //showPopup(`✅ Barcode ${barcode} berhasil disimpan (${rows.length} item)!`, 'success');
   barcodeInput.value = '';
   barcodeInput.focus();
 });
@@ -321,7 +347,7 @@ function addRowToTable(barcode, data) {
   tableBody.prepend(row);
 }
 
-// 🔹 Hapus data terpilih (KEMBALIKAN ke tabel data secara utuh)
+// 🔹 Hapus data terpilih (versi perbaikan)
 async function hapusTerpilih() {
   const selected = document.querySelectorAll('.row-check:checked');
   if (selected.length === 0) {
@@ -333,31 +359,44 @@ async function hapusTerpilih() {
 
   for (const cb of selected) {
     const barcode = cb.dataset.barcode;
-    const { data, error } = await supabaseClient
+
+    // Ambil semua data yang punya barcode sama
+    const { data: rows, error } = await supabaseClient
       .from('gudang_penyimpanan')
       .select('*')
-      .eq('barcode', barcode)
-      .maybeSingle();
+      .eq('barcode', barcode);
 
-    if (data) {
-      // Kembalikan semua kolom ke tabel data (utuh)
-      const restorePayload = { ...data };
-      delete restorePayload.id; // hilangkan id Supabase auto
-      delete restorePayload.saved_at;
-      delete restorePayload.place;
-      delete restorePayload.packer;
-      delete restorePayload.barcode;
+    if (error || !rows || rows.length === 0) continue;
 
-      await supabaseClient.from('data').insert([restorePayload]);
-      await supabaseClient.from('gudang_penyimpanan').delete().eq('barcode', barcode);
-      cb.closest('tr').remove();
-      scannedBarcodes.delete(barcode);
-    }
+    // Buat payload untuk dikembalikan ke tabel data
+    const restorePayload = rows.map(row => {
+      const copy = { ...row };
+      delete copy.id;
+      delete copy.saved_at;
+      delete copy.place;
+      delete copy.packer;
+      delete copy.barcode;
+      return copy;
+    });
+
+    // Simpan kembali ke tabel data
+    await supabaseClient.from('data').insert(restorePayload);
+
+    // Hapus semua data barcode sama dari gudang_penyimpanan
+    await supabaseClient.from('gudang_penyimpanan').delete().eq('barcode', barcode);
+
+    // Hapus dari tampilan tabel (semua baris yang punya barcode sama)
+    document.querySelectorAll(`.row-check[data-barcode="${barcode}"]`).forEach(el => {
+      el.closest('tr').remove();
+    });
+
+    scannedBarcodes.delete(barcode);
   }
 
   updateTotalCount();
-  showPopup(`♻️ Data berhasil dikembalikan ke tabel asal secara utuh!`, 'success');
+  //showPopup(`♻️ Semua data dengan barcode sama berhasil dikembalikan ke tabel asal!`, 'success');
 }
+
 
 // 🔹 Pilih semua
 checkAll.addEventListener('change', () => {
