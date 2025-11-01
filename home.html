@@ -179,124 +179,169 @@
   </div>
 
   <script>
-    const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function loadData() {
-      const tbody = document.getElementById("dataBody");
-      tbody.innerHTML = "<tr><td colspan='14'>🔄 載入中...</td></tr>";
+  async function loadData() {
+    const tbody = document.getElementById("dataBody");
+    tbody.innerHTML = "<tr><td colspan='14'>🔄 載入中...</td></tr>";
 
-      const c = document.getElementById("searchCustomer").value.trim();
-      const o = document.getElementById("searchOrder").value.trim();
-      const d = document.getElementById("searchDelivery").value.trim();
-      const company = document.getElementById("searchCompany").value.trim();
-      const place = document.getElementById("searchPlace").value.trim();
+    const c = document.getElementById("searchCustomer").value.trim();
+    const o = document.getElementById("searchOrder").value.trim();
+    const d = document.getElementById("searchDelivery").value.trim();
+    const company = document.getElementById("searchCompany").value.trim();
+    const place = document.getElementById("searchPlace").value.trim();
 
-      let query = supabaseClient.from("gudang_penyimpanan").select("*").order("saved_at", { ascending: false });
+    let query = supabaseClient.from("gudang_penyimpanan").select("*").order("saved_at", { ascending: false });
 
-      if (c) query = query.ilike("customer", `%${c}%`);
-      if (o) query = query.ilike("customer_order_number", `%${o}%`);
-      if (d) query = query.ilike("delivery_order_number", `%${d}%`);
-      if (company) query = query.ilike("company_number", `%${company}%`);
-      if (place) query = query.ilike("place", `%${place}%`);
+    if (c) query = query.ilike("customer", `%${c}%`);
+    if (o) query = query.ilike("customer_order_number", `%${o}%`);
+    if (d) query = query.ilike("delivery_order_number", `%${d}%`);
+    if (company) query = query.ilike("company_number", `%${company}%`);
+    if (place) query = query.ilike("place", `%${place}%`);
 
-      const { data, error } = await query;
-      if (error) {
-        tbody.innerHTML = `<tr><td colspan="14" style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='14'>⚠️ 無資料</td></tr>";
-        document.getElementById("countInfo").textContent = "📦 無資料";
-        return;
-      }
-
-      document.getElementById("countInfo").textContent = `📦 共有 ${data.length} 筆`;
-
-      tbody.innerHTML = "";
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td><input type="checkbox" class="selectRow" data-id="${row.id}" /></td>
-          <td>${row.packaging_board || ""}</td>
-          <td>${row.box_number || ""}</td>
-          <td>${row.material_order_number || ""}</td>
-          <td>${row.original_material_order_number || ""}</td>
-          <td>${row.company_number || ""}</td>
-          <td>${row.packaging_quantity || ""}</td>
-          <td>${row.customer || ""}</td>
-          <td>${row.customer_order_number || ""}</td>
-          <td>${row.delivery_order_number || ""}</td>
-          <td>${row.packaging_time ? new Date(row.packaging_time).toLocaleString() : ""}</td>
-          <td>${row.packer || ""}</td>
-          <td>${row.place || ""}</td>
-          <td>${row.saved_at ? new Date(row.saved_at).toLocaleString() : ""}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+    const { data, error } = await query;
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="14" style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
+      return;
     }
 
-    function toggleAll(master) {
-      document.querySelectorAll(".selectRow").forEach(cb => cb.checked = master.checked);
+    if (!data || data.length === 0) {
+      tbody.innerHTML = "<tr><td colspan='14'>⚠️ 無資料</td></tr>";
+      document.getElementById("countInfo").textContent = "📦 無資料";
+      return;
     }
 
-    async function deleteSelected() {
-      const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
-      if (checkedBoxes.length === 0) return alert("⚠️ 請先選擇資料");
-      if (!confirm(`確定刪除 ${checkedBoxes.length} 筆資料？`)) return;
+    document.getElementById("countInfo").textContent = `📦 共有 ${data.length} 筆`;
 
-      const ids = checkedBoxes.map(cb => cb.dataset.id);
-      const { error } = await supabaseClient.from("gudang_penyimpanan").delete().in("id", ids);
-      if (error) return alert("❌ 刪除失敗: " + error.message);
+    tbody.innerHTML = "";
+    data.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input type="checkbox" class="selectRow" data-id="${row.id}" data-barcode="${row.box_number}" /></td>
+        <td>${row.packaging_board || ""}</td>
+        <td>${row.box_number || ""}</td>
+        <td>${row.material_order_number || ""}</td>
+        <td>${row.original_material_order_number || ""}</td>
+        <td>${row.company_number || ""}</td>
+        <td>${row.packaging_quantity || ""}</td>
+        <td>${row.customer || ""}</td>
+        <td>${row.customer_order_number || ""}</td>
+        <td>${row.delivery_order_number || ""}</td>
+        <td>${row.packaging_time ? new Date(row.packaging_time).toLocaleString() : ""}</td>
+        <td>${row.packer || ""}</td>
+        <td>${row.place || ""}</td>
+        <td>${row.saved_at ? new Date(row.saved_at).toLocaleString() : ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-      checkedBoxes.forEach(cb => cb.closest("tr").remove());
-      document.getElementById("selectAll").checked = false;
-      alert(`🗑️ 已刪除 ${ids.length} 筆資料`);
-    }
+  function toggleAll(master) {
+    document.querySelectorAll(".selectRow").forEach(cb => cb.checked = master.checked);
+  }
 
-    function massEdit() {
-      const checked = document.querySelectorAll(".selectRow:checked");
-      if (checked.length === 0) return alert("⚠️ 請先選擇要編輯的資料");
-      document.getElementById("editModal").style.display = "flex";
-    }
+  async function deleteSelected() {
+    const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
+    if (checkedBoxes.length === 0) return alert("⚠️ 請先選擇資料");
+    if (!confirm(`確定刪除 ${checkedBoxes.length} 筆資料？\n刪除後資料將返回原始資料庫。`)) return;
 
-    function closeModal() {
-      document.getElementById("editModal").style.display = "none";
-      document.getElementById("editBoard").value = "";
-      document.getElementById("editPacker").value = "";
-      document.getElementById("editPlace").value = "";
-    }
+    for (const cb of checkedBoxes) {
+      const id = cb.dataset.id;
+      const barcode = cb.dataset.barcode;
 
-    async function applyMassEdit() {
-      const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
-      const ids = checkedBoxes.map(cb => cb.dataset.id);
-      if (ids.length === 0) return alert("⚠️ 未選擇資料");
-
-      const board = document.getElementById("editBoard").value.trim();
-      const packer = document.getElementById("editPacker").value.trim();
-      const place = document.getElementById("editPlace").value.trim();
-      if (!board && !packer && !place) return alert("⚠️ 請輸入要更新的內容");
-
-      const updateData = {};
-      if (board) updateData.packaging_board = board;
-      if (packer) updateData.packer = packer;
-      if (place) updateData.place = place;
-
-      const { error } = await supabaseClient
+      // 🔹 Ambil data dulu dari gudang_penyimpanan
+      const { data: recordData, error: fetchError } = await supabaseClient
         .from("gudang_penyimpanan")
-        .update(updateData)
-        .in("id", ids);
+        .select("*")
+        .eq("id", id)
+        .single();
 
-      if (error) return alert("❌ 更新失敗: " + error.message);
+      if (fetchError || !recordData) {
+        alert(`❌ 無法讀取資料 ID ${id}: ${fetchError?.message || "Tidak ditemukan"}`);
+        continue;
+      }
 
-      closeModal();
-      alert(`✅ 已更新 ${ids.length} 筆資料`);
-      loadData();
+      // 🔹 Hapus dari gudang_penyimpanan
+      const { error: deleteError } = await supabaseClient
+        .from("gudang_penyimpanan")
+        .delete()
+        .eq("id", id);
+
+      if (deleteError) {
+        alert(`❌ 刪除失敗: ${deleteError.message}`);
+        continue;
+      }
+
+      // 🔹 Kembalikan ke tabel data
+      const originalData = {
+        box_number: recordData.box_number,
+        customer: recordData.customer,
+        company_number: recordData.company_number,
+        packaging_quantity: recordData.packaging_quantity,
+        material_order_number: recordData.material_order_number,
+        original_material_order_number: recordData.original_material_order_number,
+        customer_order_number: recordData.customer_order_number,
+        delivery_order_number: recordData.delivery_order_number,
+        packaging_time: recordData.packaging_time,
+      };
+
+      const { error: restoreError } = await supabaseClient
+        .from("data")
+        .insert([originalData]);
+
+      if (restoreError) {
+        alert(`⚠️ 資料還原失敗 (${barcode}): ${restoreError.message}`);
+      }
     }
 
-    document.addEventListener("DOMContentLoaded", loadData);
-  </script>
+    alert(`✅ 已刪除並還原 ${checkedBoxes.length} 筆資料`);
+    loadData();
+  }
+
+  function massEdit() {
+    const checked = document.querySelectorAll(".selectRow:checked");
+    if (checked.length === 0) return alert("⚠️ 請先選擇要編輯的資料");
+    document.getElementById("editModal").style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("editModal").style.display = "none";
+    document.getElementById("editBoard").value = "";
+    document.getElementById("editPacker").value = "";
+    document.getElementById("editPlace").value = "";
+  }
+
+  async function applyMassEdit() {
+    const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
+    const ids = checkedBoxes.map(cb => cb.dataset.id);
+    if (ids.length === 0) return alert("⚠️ 未選擇資料");
+
+    const board = document.getElementById("editBoard").value.trim();
+    const packer = document.getElementById("editPacker").value.trim();
+    const place = document.getElementById("editPlace").value.trim();
+    if (!board && !packer && !place) return alert("⚠️ 請輸入要更新的內容");
+
+    const updateData = {};
+    if (board) updateData.packaging_board = board;
+    if (packer) updateData.packer = packer;
+    if (place) updateData.place = place;
+
+    const { error } = await supabaseClient
+      .from("gudang_penyimpanan")
+      .update(updateData)
+      .in("id", ids);
+
+    if (error) return alert("❌ 更新失敗: " + error.message);
+
+    closeModal();
+    alert(`✅ 已更新 ${ids.length} 筆資料`);
+    loadData();
+  }
+
+  document.addEventListener("DOMContentLoaded", loadData);
+</script>
+
 </body>
 </html>
