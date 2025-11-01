@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Penyimpanan Barang Otomatis</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -23,19 +24,19 @@ body {
   flex-direction: column;
   height: 100vh;
 }
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 h2 {
   text-align: center;
   color: #007bff;
-  margin-bottom: 20px;
-}
-label {
-  font-weight: bold;
-  margin-right: 10px;
-}
-input[type=text] {
-  padding: 8px;
-  font-size: 16px;
-  width: 200px;
+  margin: 0;
+  flex-grow: 1;
 }
 button {
   padding: 6px 10px;
@@ -43,12 +44,26 @@ button {
   border-radius: 6px;
   cursor: pointer;
 }
-.delete-btn {
-  background: #dc3545;
-  color: white;
+.print-btn { background: #28a745; color: white; font-weight: bold; }
+.print-btn:hover { background: #218838; }
+.delete-btn { background: #dc3545; color: white; font-weight: bold; }
+.delete-btn:hover { background: #b02a37; }
+.row { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; }
+label { font-weight: bold; }
+input[type=text] {
+  padding: 8px;
+  font-size: 16px;
+  width: 200px;
 }
-.delete-btn:hover {
-  background: #b02a37;
+.total-box {
+  font-size: 18px;
+  font-weight: bold;
+  margin-top: 10px;
+  background: #e3f2fd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  color: #007bff;
 }
 .table-container {
   flex-grow: 1;
@@ -57,15 +72,8 @@ button {
   border-radius: 8px;
   margin-top: 15px;
 }
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-}
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
 th {
   background: #007bff;
   color: white;
@@ -92,31 +100,33 @@ th {
 .notification.show { display: block; }
 .notification.error { background: #e63946; }
 .notification.warning { background: #ff9800; }
+.notification.success { background: #4caf50; }
 @keyframes fadeIn {
   from { opacity: 0; transform: translate(-50%, -60%); }
   to { opacity: 1; transform: translate(-50%, -50%); }
 }
-.row {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 10px;
-}
-.total-box {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 10px;
-  background: #e3f2fd;
-  padding: 8px 12px;
-  border-radius: 6px;
-  display: inline-block;
-  color: #007bff;
+@media print {
+  body * { visibility: hidden; }
+  #printArea, #printArea * { visibility: visible; }
+  #printArea {
+    position: absolute;
+    left: 0; top: 0;
+    width: 100%;
+    text-align: center;
+  }
 }
 </style>
 </head>
 <body>
 <div class="container">
-  <h2>📦 Gudang Penyimpanan 存放位置</h2>
+
+  <div class="top-bar">
+    <h2>📦 Gudang Penyimpanan 存放位置</h2>
+    <div style="display:flex;gap:10px;">
+      <button class="print-btn" onclick="printTempat()">🖨 Cetak Tempat</button>
+      <button class="delete-btn" onclick="hapusTerpilih()">🗑 Hapus Terpilih</button>
+    </div>
+  </div>
   
   <div class="row">
     <label>打包人員 :</label>
@@ -134,21 +144,19 @@ th {
     <input type="text" id="barcodeInput" placeholder="" disabled>
   </div>
 
-  <!-- 🔹 Total unik -->
   <div class="total-box">Total Box 总箱数: <span id="totalCount">0</span></div>
 
-  <!-- 🔹 Tabel scrollable -->
   <div class="table-container">
     <table>
       <thead>
         <tr>
+          <th><input type="checkbox" id="checkAll"></th>
           <th>Barcode</th>
           <th>Customer</th>
           <th>Company No</th>
           <th>Qty</th>
           <th>Packer</th>
           <th>Status</th>
-          <th>Aksi</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -157,6 +165,15 @@ th {
 </div>
 
 <div id="popup" class="notification"></div>
+
+<!-- 🔹 Area print label -->
+<div id="printArea" style="display:none;">
+  <h3>📍 Tempat Penyimpanan</h3>
+  <svg id="placeBarcode"></svg>
+  <p id="placeText"></p>
+  <p id="packerText"></p>
+  <p id="dateText"></p>
+</div>
 
 <script>
 const SUPABASE_URL = 'https://uusljhegkvahcjkaxqkz.supabase.co';
@@ -169,12 +186,13 @@ const placeInput = document.getElementById('placeInput');
 const barcodeInput = document.getElementById('barcodeInput');
 const tableBody = document.getElementById('tableBody');
 const totalCount = document.getElementById('totalCount');
+const checkAll = document.getElementById('checkAll');
 
 let currentPackerName = null;
 let lastCustomer = null;
 let scannedBarcodes = new Set();
 
-function showPopup(message, type = "error", duration = 5000) {
+function showPopup(message, type = "error", duration = 4000) {
   const popup = document.getElementById('popup');
   popup.textContent = message;
   popup.className = `notification show ${type}`;
@@ -195,10 +213,9 @@ packerCodeInput.addEventListener('change', async () => {
     .single();
 
   if (error || !data) {
-    showPopup(`❌ Karyawan dengan kode ${code} tidak ditemukan!`, 'error');
+    showPopup(`❌ Karyawan ${code} tidak ditemukan!`, 'error');
     packerNameDisplay.textContent = '';
     currentPackerName = null;
-    packerCodeInput.focus();
   } else {
     packerNameDisplay.textContent = data.nama;
     currentPackerName = data.nama;
@@ -212,92 +229,79 @@ packerCodeInput.addEventListener('change', async () => {
 // 🔹 Input tempat
 placeInput.addEventListener('change', () => {
   if (!placeInput.value.trim()) {
-    showPopup('⚠️ Tempat penyimpanan belum diisi!', 'warning');
+    showPopup('⚠️ Tempat belum diisi!', 'warning');
     return;
   }
   barcodeInput.disabled = false;
   barcodeInput.focus();
 });
 
-// 🔹 Scan barcode (pindah otomatis)
+// 🔹 Scan barcode (PINDAH data dari tabel data ke gudang_penyimpanan)
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
   const place = placeInput.value.trim();
-
   if (!barcode || !place || !currentPackerName) {
-    showPopup('⚠️ Lengkapi data karyawan & tempat sebelum scan!', 'warning');
+    showPopup('⚠️ Lengkapi data karyawan & tempat!', 'warning');
     barcodeInput.value = '';
     return;
   }
 
+  // Cek apakah barcode sudah ada di penyimpanan
+  const { data: existing } = await supabaseClient
+    .from('gudang_penyimpanan')
+    .select('barcode')
+    .eq('barcode', barcode)
+    .maybeSingle();
+
+  if (existing) {
+    showPopup(`⚠️ Barcode ${barcode} sudah ada di penyimpanan!`, 'warning');
+    barcodeInput.value = '';
+    return;
+  }
+
+  // Ambil data lengkap dari tabel asal
   const { data, error } = await supabaseClient
     .from('data')
     .select('*')
-    .eq('box_number', barcode);
+    .eq('box_number', barcode)
+    .maybeSingle();
 
-  if (error || !data || data.length === 0) {
-    showPopup(`❌ Data untuk barcode ${barcode} tidak ditemukan di tabel "data"!`, 'error');
+  if (error || !data) {
+    showPopup(`❌ Barcode ${barcode} tidak ditemukan di tabel data!`, 'error');
     barcodeInput.value = '';
     barcodeInput.focus();
     return;
   }
 
-  const row = data[0];
+  const row = data;
 
-  // 🔸 Cek konsistensi customer
-  if (lastCustomer && row.customer !== lastCustomer) {
-    showPopup(`⚠️ 客戶 (Customer) berbeda!\nTidak bisa disimpan karena berbeda dengan sebelumnya (${lastCustomer}).`, 'error');
-    barcodeInput.value = '';
-    barcodeInput.focus();
-    return;
-  }
-
-  // 🔹 Cek barcode duplikat
-  if (scannedBarcodes.has(barcode)) {
-    showPopup(`⚠️ Barcode ${barcode} sudah pernah di-scan!`, 'warning');
-    barcodeInput.value = '';
-    barcodeInput.focus();
-    return;
-  }
-
-  // 🔹 Siapkan data untuk disimpan
+  // Tambahkan kolom pelengkap
   const payload = {
-    ...row,
+    ...row, // salin semua kolom dari tabel data (utuh)
     barcode,
     place,
     packer: currentPackerName,
     saved_at: new Date().toISOString()
   };
 
-  // 🔹 1. Simpan ke gudang_penyimpanan
+  // Simpan ke gudang_penyimpanan
   const { error: insertError } = await supabaseClient
     .from('gudang_penyimpanan')
     .insert([payload]);
 
   if (insertError) {
-    showPopup(`❌ Gagal menyimpan ke gudang_penyimpanan: ${insertError.message}`, 'error');
-    barcodeInput.value = '';
+    showPopup(`❌ Gagal menyimpan ke penyimpanan: ${insertError.message}`, 'error');
     return;
   }
 
-  // 🔹 2. Hapus dari data asli (tabel data)
-  const { error: deleteError } = await supabaseClient
-    .from('data')
-    .delete()
-    .eq('box_number', barcode);
+  // Hapus dari tabel data
+  await supabaseClient.from('data').delete().eq('box_number', barcode);
 
-  if (deleteError) {
-    showPopup(`⚠️ Gagal menghapus dari tabel data: ${deleteError.message}`, 'warning');
-  } else {
-  //  showPopup(`✅ Data ${barcode} berhasil dipindahkan ke gudang_penyimpanan!`, 'success');
-  }
-
-  // 🔹 Tambahkan ke tabel tampilan
   addRowToTable(barcode, row);
-  lastCustomer = row.customer;
   scannedBarcodes.add(barcode);
+  lastCustomer = row.customer;
   updateTotalCount();
-
+  //showPopup(`✅ Barcode ${barcode} berhasil dipindah ke penyimpanan!`, 'success');
   barcodeInput.value = '';
   barcodeInput.focus();
 });
@@ -306,72 +310,85 @@ barcodeInput.addEventListener('change', async () => {
 function addRowToTable(barcode, data) {
   const row = document.createElement('tr');
   row.innerHTML = `
+    <td><input type="checkbox" class="row-check" data-barcode="${barcode}"></td>
     <td>${barcode}</td>
     <td>${data.customer || '-'}</td>
     <td>${data.company_number || '-'}</td>
     <td>${data.packaging_quantity || '-'}</td>
     <td>${currentPackerName || '-'}</td>
     <td style="color:green;font-weight:bold;">✔️ Disimpan</td>
-    <td><button class="delete-btn" onclick="deleteRow('${barcode}', this)">Hapus</button></td>
   `;
   tableBody.prepend(row);
 }
 
-// 🔹 Hapus data dan kembalikan ke tabel data
-async function deleteRow(barcode, btn) {
-  if (!confirm(`Yakin ingin menghapus barcode ${barcode} dari penyimpanan?`)) return;
-
-  // 1️⃣ Ambil dulu data dari gudang_penyimpanan
-  const { data, error: getError } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .select('*')
-    .eq('barcode', barcode);
-
-  if (getError || !data || data.length === 0) {
-    showPopup(`❌ Data ${barcode} tidak ditemukan di gudang_penyimpanan!`, 'error');
+// 🔹 Hapus data terpilih (KEMBALIKAN ke tabel data secara utuh)
+async function hapusTerpilih() {
+  const selected = document.querySelectorAll('.row-check:checked');
+  if (selected.length === 0) {
+    showPopup('⚠️ Pilih data yang ingin dihapus!', 'warning');
     return;
   }
 
-  const row = data[0];
+  if (!confirm(`Yakin ingin menghapus ${selected.length} data dan mengembalikannya ke tabel data?`)) return;
 
-  // 2️⃣ Hapus dari gudang_penyimpanan
-  const { error: delError } = await supabaseClient
-    .from('gudang_penyimpanan')
-    .delete()
-    .eq('barcode', barcode);
+  for (const cb of selected) {
+    const barcode = cb.dataset.barcode;
+    const { data, error } = await supabaseClient
+      .from('gudang_penyimpanan')
+      .select('*')
+      .eq('barcode', barcode)
+      .maybeSingle();
 
-  if (delError) {
-    showPopup('❌ Gagal menghapus dari gudang_penyimpanan: ' + delError.message, 'error');
-    return;
+    if (data) {
+      // Kembalikan semua kolom ke tabel data (utuh)
+      const restorePayload = { ...data };
+      delete restorePayload.id; // hilangkan id Supabase auto
+      delete restorePayload.saved_at;
+      delete restorePayload.place;
+      delete restorePayload.packer;
+      delete restorePayload.barcode;
+
+      await supabaseClient.from('data').insert([restorePayload]);
+      await supabaseClient.from('gudang_penyimpanan').delete().eq('barcode', barcode);
+      cb.closest('tr').remove();
+      scannedBarcodes.delete(barcode);
+    }
   }
 
-  // 3️⃣ Kembalikan ke tabel data
-  const { error: restoreError } = await supabaseClient
-    .from('data')
-    .insert([{
-      box_number: row.barcode,
-      customer: row.customer,
-      company_number: row.company_number,
-      packaging_quantity: row.packaging_quantity,
-      // tambahkan kolom lain sesuai tabel `data`
-    }]);
-
-  if (restoreError) {
-    showPopup(`⚠️ Gagal mengembalikan ke tabel data: ${restoreError.message}`, 'warning');
-  } else {
-    showPopup(`♻️ Data ${barcode} Hapus!`, 'success');
-  }
-
-  // 🔹 Hapus dari tampilan
-  btn.closest('tr').remove();
-  scannedBarcodes.delete(barcode);
   updateTotalCount();
+  showPopup(`♻️ Data berhasil dikembalikan ke tabel asal secara utuh!`, 'success');
 }
 
-// 🔹 Update total unik
+// 🔹 Pilih semua
+checkAll.addEventListener('change', () => {
+  const all = document.querySelectorAll('.row-check');
+  all.forEach(cb => cb.checked = checkAll.checked);
+});
+
+// 🔹 Update total
 function updateTotalCount() {
   totalCount.textContent = scannedBarcodes.size;
 }
+
+// 🔹 Cetak tempat
+function printTempat() {
+  const place = placeInput.value.trim();
+  if (!place) return showPopup('⚠️ Tempat belum diisi!', 'warning');
+
+  const packer = currentPackerName || '-';
+  const date = new Date().toLocaleString();
+
+  document.getElementById('placeText').textContent = `存放位置: ${place}`;
+  document.getElementById('packerText').textContent = `Packer: ${packer}`;
+  document.getElementById('dateText').textContent = `Tanggal: ${date}`;
+  document.getElementById('printArea').style.display = 'block';
+
+  JsBarcode("#placeBarcode", place, { format: "CODE128", width: 2, height: 60, displayValue: true });
+
+  window.print();
+  setTimeout(() => document.getElementById('printArea').style.display = 'none', 500);
+}
 </script>
+
 </body>
 </html>
