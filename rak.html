@@ -14,10 +14,9 @@
     margin: 0;
     height: 100vh;
     display: flex;
-    overflow: hidden; /* cegah scroll global */
+    overflow: hidden;
   }
 
-  /* Panel kontrol di kiri */
   .controls {
     flex: 0 0 320px;
     background: #fff;
@@ -26,8 +25,8 @@
     box-shadow: 4px 0 12px rgba(0,0,0,0.05);
     position: sticky;
     top: 0;
-    height: 100vh; /* penuh layar */
-    overflow-y: auto; /* kalau terlalu banyak input, bisa discroll */
+    height: 100vh;
+    overflow-y: auto;
   }
 
   .controls label {
@@ -69,7 +68,6 @@
     color: white;
   }
 
-  /* Area kanan yang bisa di-scroll */
   .sticker-area {
     flex: 1;
     overflow-y: auto;
@@ -93,21 +91,22 @@
     box-shadow: 2px 4px 14px rgba(0,0,0,0.08);
     display: flex;
     align-items: center;
-    gap: 5px;
-    height: 120px;
+    justify-content: space-between;
+    gap: 10px;
+    height: 140px;
     position: relative;
   }
 
   .code-box {
-    flex: 0 0 200px;
+    flex: 0 0 180px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .code {
-    font-size: 90px;
-    font-weight: 100;
+    font-size: 100px;
+    font-weight: 600;
     color: #e76f51;
     letter-spacing: 2px;
   }
@@ -121,7 +120,7 @@
   }
 
   .barcode-area svg {
-    height: 90px;
+    height: 80px;
     width: 100%;
     background: #fff;
     padding: 5px;
@@ -130,28 +129,35 @@
 
   .barcode-label {
     font-size: 20px;
-    font-weight: 20;
+    font-weight: 500;
     color: #777;
     margin-top: 4px;
   }
 
+  /* ===== Panah di samping besar ===== */
   .arrow-tip {
-    position: absolute;
     display: flex;
     align-items: center;
-    gap: 1px;
-    font-size: 20px;
-    color: #555;
+    justify-content: center;
+    gap: 10px;
+    font-size: 28px;
+    color: #e76f51;
+    flex: 0 0 120px;
   }
 
   .arrow {
-    width: 10px;
-    height: 50px;
-    border-radius: 100%;
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
     background: #fff;
     display: grid;
     place-items: center;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+  }
+
+  .arrow svg {
+    width: 40px;
+    height: 40px;
   }
 
   @media print {
@@ -166,8 +172,8 @@
 <body>
 
   <div class="controls">
-    <label for="codes">Masukkan range kode (contoh: A01-A20 atau beberapa dengan koma):</label>
-    <textarea id="codes" placeholder=""></textarea>
+    <label for="codes">Masukkan range kode (contoh: A01-A20):</label>
+    <textarea id="codes" placeholder="Contoh: A01-A20"></textarea>
 
     <label for="layout">Pilih jumlah per halaman:</label>
     <select id="layout">
@@ -202,58 +208,34 @@ function generateSticker(code, direction) {
     <div class="code-box">
       <div class="code">${code}</div>
     </div>
+    <div class="arrow-tip">${arrowHTML}</div>
     <div class="barcode-area">
       <svg id="barcode-${code}"></svg>
       <div class="barcode-label">${code}</div>
     </div>
-    ${arrowHTML}
   `;
   return div;
 }
 
 function getArrow(direction) {
-  const icons = {
-    up: { text: '↑ Atas', x: 'center', y: 'top', path: '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>' },
-    down: { text: '↓ Bawah', x: 'center', y: 'top', path: '<path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/>' },
-    left: { text: '← Kiri', x: 'left', y: 'top', path: '<path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>' },
-    right: { text: '→ Kanan', x: 'left', y: 'top',path: '<path d="M5 12h14"/><path d="M12 5l7 7-7 7"/>' },
+  const arrows = {
+    up: '<svg viewBox="0 0 20 20" fill="none" stroke="#e76f51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>',
+    down: '<svg viewBox="0 0 20 20" fill="none" stroke="#e76f51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>',
+    left: '<svg viewBox="0 0 20 20" fill="none" stroke="#e76f51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>',
+    right: '<svg viewBox="0 0 20 20" fill="none" stroke="#e76f51" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>'
   };
-
-  const a = icons[direction];
-  const posStyle = {
-    top: a.y === 'top' ? '100px' : a.y === 'bottom' ? '100px' : '100%',
-    left: a.x === 'left' ? '100px' : 'auto',
-    right: a.x === 'right' ? '100px' : 'auto',
-    bottom: a.y === 'bottom' ? '100px' : 'auto',
-    transform: a.y === 'center' ? 'translateY(-50%)' : ''
-  };
-
-  const style = Object.entries(posStyle).map(([k, v]) => `${k}:${v};`).join('');
-
-  return `
-    <div class="arrow-tip" style="${style}">
-      <span>${a.text}</span>
-      <div class="arrow">
-        <svg viewBox="0 0 20 20" fill="none" stroke="#e76f51" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-          ${a.path}
-        </svg>
-      </div>
-    </div>
-  `;
+  return `<div class="arrow">${arrows[direction]}</div>`;
 }
 
 function expandRange(rangeStr) {
   const match = rangeStr.trim().match(/^([A-Z]+)(\d+)\s*-\s*([A-Z]+)?(\d+)$/i);
   if (!match) return [rangeStr.trim()];
-
   const prefix1 = match[1];
   const prefix2 = match[3] || prefix1;
   const startNum = parseInt(match[2]);
   const endNum = parseInt(match[4]);
   const result = [];
-
   if (prefix1 !== prefix2) return [rangeStr.trim()];
-
   const padLength = match[2].length;
   for (let i = startNum; i <= endNum; i++) {
     result.push(`${prefix1}${String(i).padStart(padLength, '0')}`);
@@ -264,7 +246,6 @@ function expandRange(rangeStr) {
 document.getElementById('generate').addEventListener('click', () => {
   const input = document.getElementById('codes').value.trim();
   if (!input) return alert('Masukkan kode terlebih dahulu!');
-
   const layout = document.getElementById('layout').value;
   const direction = document.getElementById('direction').value;
   const container = document.getElementById('stickerContainer');
@@ -281,7 +262,7 @@ document.getElementById('generate').addEventListener('click', () => {
     JsBarcode(`#barcode-${code}`, code, {
       format: 'CODE128',
       width: 3,
-      height: 150,
+      height: 120,
       displayValue: false,
       margin: 1
     });
@@ -296,6 +277,5 @@ document.getElementById('print').addEventListener('click', () => {
   window.print();
 });
 </script>
-
 </body>
 </html>
