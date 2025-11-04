@@ -102,9 +102,9 @@
 <body>
 <div class="container">
   <div class="actions">
+    <!-- 🔧 input langsung aktif & tangkap enter -->
     <input id="placeInput" type="text" placeholder="例如：A1" autofocus onkeydown="handleEnter(event)">
-<button onclick="filterByPlace()">查詢</button>
-
+    <button onclick="filterByPlace()">查詢</button>
     <button class="ghost" onclick="refreshData()">刷新資料</button>
     <button onclick="window.print()">🖨️ 列印</button>
   </div>
@@ -122,9 +122,7 @@
       </div>
     </div>
 
-    <div class="filter-bar">
-
-    </div>
+    <div class="filter-bar"></div>
 
     <table id="dataTable">
       <thead>
@@ -168,16 +166,6 @@
       month: "2-digit",
       day: "2-digit",
     });
-  // === HANDLE SCAN BARCODE ===
-function handleEnter(event) {
-  if (event.key === "Enter") {
-    event.preventDefault(); // mencegah submit form default
-    filterByPlace();
-    const input = document.getElementById("placeInput");
-    input.select(); // otomatis pilih ulang teks agar bisa scan berikutnya langsung ganti
-  }
-}
-
 
   // === BUAT BARCODE UTAMA ===
   function makeMainBarcode(text) {
@@ -283,6 +271,16 @@ function handleEnter(event) {
         margin: 0,
       });
     });
+  }
+
+  // === HANDLE SCAN BARCODE ===
+  function handleEnter(event) {
+    if (event.key === "Enter") {
+      event.preventDefault(); // mencegah reload form
+      filterByPlace();
+      const input = document.getElementById("placeInput");
+      setTimeout(() => input.select(), 500); // pilih lagi teks biar siap scan berikutnya
+    }
   }
 </script>
 </body>
