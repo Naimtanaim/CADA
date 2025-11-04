@@ -85,69 +85,71 @@
     grid-template-columns: 1fr;
   }
   .layout-2 {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 10cm); /* dua kolom lebar 10cm */
+    justify-content: center;
   }
 
   /* Stiker Base */
   .sticker {
     background: linear-gradient(90deg, #fffaf0, #fff);
     border: 2px dashed #f4a261;
-    border-radius: 14px;
-    padding: 16px 20px;
+    border-radius: 12px;
     box-shadow: 2px 4px 14px rgba(0,0,0,0.08);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    width: 100%;
+    gap: 10px;
     box-sizing: border-box;
   }
 
   /* ✅ Ukuran tiap layout */
   .layout-1 .sticker {
     height: 200px;
-  }
-  .layout-2 .sticker {
-    height: 255px;
     padding: 16px 20px;
+  }
+
+  .layout-2 .sticker {
+    width: 10cm;
+    height: 5cm;
+    padding: 10px 14px;
   }
 
   /* Kode besar */
   .code-box {
-    flex: 0 0 140px;
+    flex: 0 0 100px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .code {
-    font-size: 80px;
+    font-size: 45px;
     font-weight: 700;
     color: #e76f51;
     letter-spacing: 2px;
   }
-  .layout-2 .code {
-    font-size: 60px;
-  }
 
   /* Panah */
   .arrow-tip {
-    flex: 0 0 60px;
+    flex: 0 0 40px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
+
   .arrow {
-    width: 50px;
-    height: 50px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     background: #fff;
     display: grid;
     place-items: center;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
+
   .arrow svg {
-    width: 40px;
-    height: 40px;
+    width: 28px;
+    height: 28px;
   }
 
   /* Barcode */
@@ -158,25 +160,23 @@
     align-items: center;
     justify-content: center;
   }
+
   .barcode-area svg {
     background: #fff;
-    padding: 5px;
-    border-radius: 10px;
+    padding: 3px;
+    border-radius: 6px;
   }
-  .layout-1 .barcode-area svg {
-    width: 80%;
-    height: 100px;
-  }
+
   .layout-2 .barcode-area svg {
     width: 90%;
-    height: 80px;
+    height: 50px;
   }
 
   .barcode-label {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: 600;
     color: #555;
-    margin-top: 8px;
+    margin-top: 4px;
     text-align: center;
   }
 
@@ -279,10 +279,10 @@ document.getElementById('generate').addEventListener('click', () => {
     container.appendChild(sticker);
     JsBarcode(`#barcode-${code}`, code.toUpperCase(), {
       format: 'CODE128',
-      width: layout === "2" ? 2.2 : 3,
-      height: layout === "2" ? 70 : 100,
+      width: layout === "2" ? 2 : 3,
+      height: layout === "2" ? 40 : 100,
       displayValue: false,
-      margin: 4
+      margin: 2
     });
   });
 });
