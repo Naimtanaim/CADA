@@ -102,8 +102,9 @@
 <body>
 <div class="container">
   <div class="actions">
-    <input id="placeInput" type="text" placeholder="例如：A1">
-    <button onclick="filterByPlace()">查詢</button>
+    <input id="placeInput" type="text" placeholder="例如：A1" autofocus onkeydown="handleEnter(event)">
+<button onclick="filterByPlace()">查詢</button>
+
     <button class="ghost" onclick="refreshData()">刷新資料</button>
     <button onclick="window.print()">🖨️ 列印</button>
   </div>
