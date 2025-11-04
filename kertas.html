@@ -178,9 +178,8 @@
   }
   makeMainBarcode("出貨課");
 
-  // === REFRESH DATA (tampilkan input kembali) ===
+  // === REFRESH DATA ===
   async function refreshData() {
-    document.getElementById("placeInput").style.display = "inline-block"; // tampilkan lagi input
     const { data, error } = await supabase
       .from("gudang_penyimpanan")
       .select("*")
@@ -226,9 +225,11 @@
 
     renderTable(uniqueData, error);
 
-    // 🔧 Kosongkan dan sembunyikan input setelah tampil
-    input.value = "";
-    input.style.display = "none";
+    // 🔧 Kosongkan teks input setelah tampil (tetapi jangan sembunyikan)
+    setTimeout(() => {
+      input.value = "";
+      input.focus();
+    }, 200);
   }
 
   // === RENDER TABEL ===
