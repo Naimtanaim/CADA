@@ -29,7 +29,7 @@
   }
 
   .controls label {
-    font-weight: 100;
+    font-weight: 600;
     display: block;
     margin-bottom: 6px;
   }
@@ -80,14 +80,15 @@
     justify-content: center;
   }
 
+  /* Layout Grid */
   .layout-1 {
     grid-template-columns: 1fr;
   }
-
   .layout-2 {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  /* Stiker Base */
   .sticker {
     background: linear-gradient(90deg, #fffaf0, #fff);
     border: 2px dashed #f4a261;
@@ -97,76 +98,86 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    height: 180px;
     box-sizing: border-box;
   }
 
+  /* ✅ Ukuran tiap layout */
+  .layout-1 .sticker {
+    height: 200px;
+  }
+  .layout-2 .sticker {
+    height: 160px;
+    padding: 12px 16px;
+  }
+
+  /* Kode besar */
   .code-box {
-    flex: 0 0 160px;
+    flex: 0 0 140px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
-
   .code {
-    font-size: 90px;
+    font-size: 80px;
     font-weight: 700;
     color: #e76f51;
     letter-spacing: 2px;
   }
-
-  .barcode-area {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
+  .layout-2 .code {
+    font-size: 60px;
   }
 
-  /* ✅ default barcode */
-  .barcode-area svg {
-    height: 80px;
-    width: 80%;
-    background: #fff;
-    padding: 5px;
-    border-radius: 10px;
-  }
-
-  /* ✅ layout 2 — barcode diperbesar */
-  .layout-2 .barcode-area svg {
-    height: 90px;
-    width: 300%;
-  }
-
-  .barcode-label {
-    font-size: 18px;
-    font-weight: 800;
-    color: #777;
-    margin-top: 8px;
-  }
-
+  /* Panah */
   .arrow-tip {
+    flex: 0 0 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 0 0 80px;
   }
-
   .arrow {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     border-radius: 50%;
     background: #fff;
     display: grid;
     place-items: center;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
   }
-
   .arrow svg {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
+  }
+
+  /* Barcode */
+  .barcode-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .barcode-area svg {
+    background: #fff;
+    padding: 5px;
+    border-radius: 10px;
+  }
+  .layout-1 .barcode-area svg {
+    width: 80%;
+    height: 100px;
+  }
+  .layout-2 .barcode-area svg {
+    width: 90%;
+    height: 80px;
+  }
+
+  .barcode-label {
+    font-size: 18px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 8px;
+    text-align: center;
   }
 
   @media print {
@@ -182,7 +193,7 @@
 <body>
   <div class="controls">
     <label for="codes">Masukkan range kode (contoh: A01-A20):</label>
-    <textarea id="codes" placeholder=""></textarea>
+    <textarea id="codes" placeholder="Contoh: A01-A20 atau A01, A02, A03"></textarea>
 
     <label for="layout">Pilih jumlah per baris:</label>
     <select id="layout">
@@ -211,15 +222,14 @@ function generateSticker(code, direction) {
   const div = document.createElement('div');
   div.className = 'sticker';
   const arrowHTML = getArrow(direction);
-
   div.innerHTML = `
     <div class="code-box">
-      <div class="code">${code}</div>
+      <div class="code">${code.toUpperCase()}</div>
     </div>
     <div class="arrow-tip">${arrowHTML}</div>
     <div class="barcode-area">
       <svg id="barcode-${code}"></svg>
-      <div class="barcode-label">${code}</div>
+      <div class="barcode-label">${code.toUpperCase()}</div>
     </div>
   `;
   return div;
@@ -237,14 +247,14 @@ function getArrow(direction) {
 
 function expandRange(rangeStr) {
   const match = rangeStr.trim().match(/^([A-Z]+)(\d+)\s*-\s*([A-Z]+)?(\d+)$/i);
-  if (!match) return [rangeStr.trim()];
-  const prefix1 = match[1];
-  const prefix2 = match[3] || prefix1;
+  if (!match) return [rangeStr.trim().toUpperCase()];
+  const prefix1 = match[1].toUpperCase();
+  const prefix2 = (match[3] || prefix1).toUpperCase();
   const startNum = parseInt(match[2]);
   const endNum = parseInt(match[4]);
-  const result = [];
-  if (prefix1 !== prefix2) return [rangeStr.trim()];
   const padLength = match[2].length;
+  const result = [];
+  if (prefix1 !== prefix2) return [rangeStr.trim().toUpperCase()];
   for (let i = startNum; i <= endNum; i++) {
     result.push(`${prefix1}${String(i).padStart(padLength, '0')}`);
   }
@@ -267,12 +277,12 @@ document.getElementById('generate').addEventListener('click', () => {
   codes.forEach(code => {
     const sticker = generateSticker(code, direction);
     container.appendChild(sticker);
-    JsBarcode(`#barcode-${code}`, code, {
+    JsBarcode(`#barcode-${code}`, code.toUpperCase(), {
       format: 'CODE128',
-      width: 3.2,
-      height: layout === "2" ? 150 : 50, // ✅ barcode lebih besar di 2 kolom
+      width: layout === "2" ? 2.2 : 3,
+      height: layout === "2" ? 70 : 100,
       displayValue: false,
-      margin: 2
+      margin: 4
     });
   });
 });
