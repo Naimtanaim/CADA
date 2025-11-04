@@ -45,7 +45,7 @@
   }
 
   #stickerContainer {
-    height: calc(100vh - 80px); /* sisa layar */
+    height: calc(100vh - 80px);
     overflow-y: auto;
     padding: 10px;
   }
@@ -101,7 +101,7 @@
   <h2>出貨課標籤列印</h2>
   <div class="controls">
     <label>箱號 / Box Number：</label>
-    <input type="text" id="barcodeInput" placeholder="">
+    <input type="text" id="barcodeInput" placeholder="" autofocus>
     <button onclick="window.print()">🖨️ 列印</button>
   </div>
 </header>
@@ -116,7 +116,11 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function loadSticker(barcode) {
-  if (!barcode) return;
+  const input = document.getElementById("barcodeInput");
+  if (!barcode) {
+    input.focus();
+    return;
+  }
 
   const container = document.getElementById("stickerContainer");
   container.innerHTML = "<p style='text-align:center;'>🔄 載入中...</p>";
@@ -129,11 +133,15 @@ async function loadSticker(barcode) {
 
   if (error) {
     container.innerHTML = `<p style='color:red;text-align:center;'>❌ 查詢錯誤：${error.message}</p>`;
+    input.value = "";
+    input.focus();
     return;
   }
 
   if (!data || data.length === 0) {
     container.innerHTML = `<p style='text-align:center;color:#999;'>⚠️ 沒有找到相關箱號：${barcode}</p>`;
+    input.value = "";
+    input.focus();
     return;
   }
 
@@ -153,10 +161,12 @@ async function loadSticker(barcode) {
       <p style="text-align:right;font-size:11px;color:#555;">${row.saved_at ? new Date(row.saved_at).toLocaleString() : ''}</p>
     `;
     container.appendChild(div);
-
-    const noEl = div.querySelector(".no");
-    makeDraggable(noEl);
+    makeDraggable(div.querySelector(".no"));
   });
+
+  // Kosongkan input & fokus lagi
+  input.value = "";
+  input.focus();
 }
 
 // --- Drag & Drop ---
@@ -192,12 +202,20 @@ function makeDraggable(el) {
 }
 
 // --- Event listeners ---
-document.getElementById("barcodeInput").addEventListener("keypress", e => {
-  if (e.key === "Enter") loadSticker(e.target.value.trim());
+const input = document.getElementById("barcodeInput");
+
+input.addEventListener("keypress", e => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    loadSticker(input.value.trim());
+  }
 });
-document.getElementById("barcodeInput").addEventListener("input", e => {
-  loadSticker(e.target.value.trim());
+
+input.addEventListener("blur", () => {
+  // Kalau kehilangan fokus, kembalikan fokus otomatis
+  setTimeout(() => input.focus(), 100);
 });
+
 </script>
 </body>
 </html>
