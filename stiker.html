@@ -1,300 +1,212 @@
-<!doctype html>
-<html lang="id">
+<!DOCTYPE html>
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Cetak Stiker Range A01-A20</title>
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出貨課標籤列印 - 固定 Header 可拖曳 NO</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   body {
-    font-family: 'Inter', Arial, sans-serif;
-    background: #f6f8fa;
+    font-family: 'Microsoft JhengHei', sans-serif;
+    background: #f9f9f9;
     margin: 0;
-    height: 100vh;
-    display: flex;
-    overflow: hidden;
+    padding: 0;
   }
 
-  .controls {
-    flex: 0 0 320px;
-    background: #fff;
-    padding: 16px;
-    border-right: 1px solid #ddd;
-    box-shadow: 4px 0 12px rgba(0,0,0,0.05);
+  header {
     position: sticky;
     top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
-
-  .controls label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 6px;
-  }
-
-  .controls textarea {
-    width: 85%;
-    height: 90px;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 15px;
-  }
-
-  .controls select, .controls button {
-    width: 100%;
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-  }
-
-  .controls select {
-    background: #f8f9fa;
-    border: 1px solid #ccc;
-  }
-
-  .controls button.generate {
-    background: #007bff;
+    background: #3f51b5;
     color: white;
-  }
-
-  .controls button.print {
-    background: #28a745;
-    color: white;
-  }
-
-  .sticker-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    background: #fafafa;
-  }
-
-  .stickers {
-    display: grid;
-    gap: 15px;
-    justify-content: center;
-  }
-
-  /* Layout Grid */
-  .layout-1 {
-    grid-template-columns: 1fr;
-  }
-
-  .layout-2 {
-    grid-template-columns: repeat(2, 9cm);
-    justify-content: center;
-  }
-
-  /* Stiker Base */
-  .sticker {
-    background: linear-gradient(90deg, #fffaf0, #fff);
-    border: 2px dashed #f4a261;
-    border-radius: 10px;
-    box-shadow: 1px 2px 8px rgba(0,0,0,0.05);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    box-sizing: border-box;
-  }
-
-  /* Ukuran Layout */
-  .layout-1 .sticker {
-    height: 200px;
-    padding: 16px 20px;
-  }
-
-  .layout-2 .sticker {
-    width: 8cm;
-    height: 5cm;
+    z-index: 100;
     padding: 8px 10px;
-  }
-
-  /* Kode besar */
-  .code-box {
-    flex: 0 0 100px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .code {
-    font-size: 50px; /* 🔥 lebih besar */
-    font-weight: 800;
-    color: #e76f51;
-    letter-spacing: 3px;
-  }
-
-  /* Panah */
-  .arrow-tip {
-    flex: 0 0 45px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .arrow {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: #fff;
-    display: grid;
-    place-items: center;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  }
-
-  .arrow svg {
-    width: 35px;
-    height: 35px;
-  }
-
-  /* Barcode */
-  .barcode-area {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  header h2 {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+  }
+
+  .controls {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+  }
+
+  input, button {
+    font-size: 14px;
+    padding: 4px 8px;
+    margin: 2px;
+  }
+
+  #stickerContainer {
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  .sticker {
+    width: 90mm;
+    height: 50mm;
+    border: 1px dashed #333;
+    border-radius: 4px;
+    margin: 8px auto;
+    padding: 6px 10px;
+    background: white;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
   }
 
-  .barcode-area svg {
-    background: #fff;
-    padding: 2px;
-    border-radius: 5px;
+  .sticker .no {
+    font-size: 40px;
+    font-weight: bold;
+    color: #3f51b5;
+    position: absolute;
+    top: 120px;
+    left: 300px;
+    cursor: grab;
   }
 
-  .layout-2 .barcode-area svg {
-    width: 90%;
-    height: 50px;
-  }
-
-  .barcode-label {
-    font-size: 14px;
-    font-weight: 700;
-    color: #333;
-    margin-top: 4px;
+  .sticker h3 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: bold;
     text-align: center;
+  }
+
+  .sticker p {
+    margin: 2px 0;
+    font-size: 15px;
+    line-height: 1.4;
   }
 
   @media print {
     body * { visibility: hidden; }
-    .stickers, .stickers * { visibility: visible; }
-    .stickers { position: absolute; left: 0; top: 0; width: 100%; }
-    .controls { display: none; }
-    body { background: white; margin: 0; }
+    .sticker, .sticker * { visibility: visible; }
+    header { display: none; }
+    .sticker { page-break-after: always; margin: 0; }
   }
 </style>
 </head>
-
 <body>
+
+<header>
+  <h2>出貨課標籤列印</h2>
   <div class="controls">
-    <label for="codes">Masukkan range kode (contoh: A01-A20):</label>
-    <textarea id="codes" placeholder="Contoh: A01-A20 atau A01, A02, A03"></textarea>
-
-    <label for="layout">Pilih jumlah per baris:</label>
-    <select id="layout">
-      <option value="1">1 Kolom</option>
-      <option value="2" selected>2 Kolom</option>
-    </select>
-
-    <label for="direction">Petunjuk arah panah:</label>
-    <select id="direction">
-      <option value="down" selected>↓ Bawah</option>
-      <option value="up">↑ Atas</option>
-      <option value="left">← Kiri</option>
-      <option value="right">→ Kanan</option>
-    </select>
-
-    <button class="generate" id="generate">Generate Stiker</button>
-    <button class="print" id="print">Print Semua</button>
+    <label>箱號 / Box Number：</label>
+    <input type="text" id="barcodeInput" placeholder="">
+    <button onclick="window.print()">🖨️ 列印</button>
   </div>
+</header>
 
-  <div class="sticker-area">
-    <div class="stickers layout-2" id="stickerContainer"></div>
-  </div>
+<div id="stickerContainer">
+  <p style="text-align:center;color:#777;">請輸入箱號以顯示標籤</p>
+</div>
 
 <script>
-function generateSticker(code, direction) {
-  const div = document.createElement('div');
-  div.className = 'sticker';
-  const arrowHTML = getArrow(direction);
-  div.innerHTML = `
-    <div class="code-box">
-      <div class="code">${code.toUpperCase()}</div>
-    </div>
-    <div class="arrow-tip">${arrowHTML}</div>
-    <div class="barcode-area">
-      <svg id="barcode-${code}"></svg>
-      <div class="barcode-label">${code.toUpperCase()}</div>
-    </div>
-  `;
-  return div;
-}
+const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-function getArrow(direction) {
-  const arrows = {
-    up: '<svg viewBox="0 0 24 24" fill="none" stroke="#e76f51" stroke-width="3"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>',
-    down: '<svg viewBox="0 0 24 24" fill="none" stroke="#e76f51" stroke-width="3"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>',
-    left: '<svg viewBox="0 0 24 24" fill="none" stroke="#e76f51" stroke-width="3"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>',
-    right: '<svg viewBox="0 0 24 24" fill="none" stroke="#e76f51" stroke-width="3"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>'
-  };
-  return `<div class="arrow">${arrows[direction]}</div>`;
-}
+// Fokus input selalu siap scan
+const barcodeInput = document.getElementById("barcodeInput");
+barcodeInput.focus();
 
-function expandRange(rangeStr) {
-  const match = rangeStr.trim().match(/^([A-Z]+)(\d+)\s*-\s*([A-Z]+)?(\d+)$/i);
-  if (!match) return [rangeStr.trim().toUpperCase()];
-  const prefix1 = match[1].toUpperCase();
-  const prefix2 = (match[3] || prefix1).toUpperCase();
-  const startNum = parseInt(match[2]);
-  const endNum = parseInt(match[4]);
-  const padLength = match[2].length;
-  const result = [];
-  if (prefix1 !== prefix2) return [rangeStr.trim().toUpperCase()];
-  for (let i = startNum; i <= endNum; i++) {
-    result.push(`${prefix1}${String(i).padStart(padLength, '0')}`);
-  }
-  return result;
-}
+async function loadSticker(barcode) {
+  if (!barcode) return;
 
-document.getElementById('generate').addEventListener('click', () => {
-  const input = document.getElementById('codes').value.trim();
-  if (!input) return alert('Masukkan kode terlebih dahulu!');
-  const layout = document.getElementById('layout').value;
-  const direction = document.getElementById('direction').value;
-  const container = document.getElementById('stickerContainer');
-  container.innerHTML = '';
-  container.className = `stickers layout-${layout}`;
+  const container = document.getElementById("stickerContainer");
+  container.innerHTML = "<p style='text-align:center;'>🔄 載入中...</p>";
 
-  const parts = input.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-  let codes = [];
-  parts.forEach(p => codes.push(...expandRange(p)));
+  const { data, error } = await supabaseClient
+    .from("gudang_penyimpanan")
+    .select("*")
+    .ilike("box_number", `%${barcode}%`)
+    .order("saved_at", { ascending: false });
 
-  codes.forEach(code => {
-    const sticker = generateSticker(code, direction);
-    container.appendChild(sticker);
-    JsBarcode(`#barcode-${code}`, code.toUpperCase(), {
-      format: 'CODE128',
-      width: layout === "2" ? 1.8 : 3,
-      height: layout === "2" ? 35 : 100,
-      displayValue: false,
-      margin: 1
-    });
-  });
-});
-
-document.getElementById('print').addEventListener('click', () => {
-  if (document.getElementById('stickerContainer').children.length === 0) {
-    alert('Belum ada stiker untuk dicetak!');
+  if (error) {
+    container.innerHTML = `<p style='color:red;text-align:center;'>❌ 查詢錯誤：${error.message}</p>`;
     return;
   }
-  window.print();
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p style='text-align:center;color:#999;'>⚠️ 沒有找到相關箱號：${barcode}</p>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  data.forEach((row, index) => {
+    const div = document.createElement("div");
+    div.className = "sticker";
+    div.innerHTML = `
+      <div class="no">${row.packaging_board || (index + 1)}</div>
+      <h3>📦 ${row.box_number || ''}</h3>
+      <p><strong>客戶:</strong> ${row.customer || '-'}</p>
+      <p><strong>客戶訂單號:</strong> ${row.customer_order_number || '-'}</p>
+      <p><strong>公司別:</strong> ${row.company_number || '-'}</p>
+      <p><strong>包裝數量:</strong> ${row.packaging_quantity || '-'}</p>
+      <p><strong>存放位置:</strong> ${row.place || '-'}</p>
+      <p><strong>打包人員:</strong> ${row.packer || '-'}</p>
+      <p style="text-align:right;font-size:11px;color:#555;">${row.saved_at ? new Date(row.saved_at).toLocaleString() : ''}</p>
+    `;
+    container.appendChild(div);
+
+    const noEl = div.querySelector(".no");
+    makeDraggable(noEl);
+  });
+
+  barcodeInput.value = ""; // kosongkan input setelah scan
+  barcodeInput.focus();     // tetap fokus
+}
+
+// Drag & Drop NO
+function makeDraggable(el) {
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  el.addEventListener("mousedown", e => {
+    isDragging = true;
+    offsetX = e.clientX - el.getBoundingClientRect().left;
+    offsetY = e.clientY - el.getBoundingClientRect().top;
+    el.style.cursor = "grabbing";
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!isDragging) return;
+    const parentRect = el.parentElement.getBoundingClientRect();
+    let x = e.clientX - parentRect.left - offsetX;
+    let y = e.clientY - parentRect.top - offsetY;
+    x = Math.max(0, Math.min(x, parentRect.width - el.offsetWidth));
+    y = Math.max(0, Math.min(y, parentRect.height - el.offsetHeight));
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      el.style.cursor = "grab";
+    }
+  });
+}
+
+// Event listeners
+barcodeInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") loadSticker(e.target.value.trim());
+});
+
+barcodeInput.addEventListener("input", e => {
+  loadSticker(e.target.value.trim());
 });
 </script>
+
 </body>
 </html>
