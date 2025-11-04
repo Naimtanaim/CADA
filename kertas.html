@@ -102,7 +102,7 @@
 <body>
 <div class="container">
   <div class="actions">
-    <!-- 🔧 input langsung aktif & tangkap enter -->
+    <!-- 🔧 input aktif, enter trigger, auto kosong setelah tampil -->
     <input id="placeInput" type="text" placeholder="例如：A1" autofocus onkeydown="handleEnter(event)">
     <button onclick="filterByPlace()">查詢</button>
     <button class="ghost" onclick="refreshData()">刷新資料</button>
@@ -193,7 +193,8 @@
 
   // === FILTER BERDASARKAN PLACE ===
   async function filterByPlace() {
-    const place = document.getElementById("placeInput").value.trim();
+    const input = document.getElementById("placeInput");
+    const place = input.value.trim();
     const tbody = document.getElementById("tableBody");
     const placeLabel = document.getElementById("placeLabel");
     tbody.innerHTML = `<tr><td colspan="7">載入中...</td></tr>`;
@@ -229,6 +230,10 @@
     makeMainBarcode(place);
 
     renderTable(uniqueData, error);
+
+    // 🔧 Hapus isi input & fokuskan kembali setelah selesai
+    input.value = "";
+    setTimeout(() => input.focus(), 300);
   }
 
   // === RENDER TABEL ===
@@ -277,9 +282,7 @@
   function handleEnter(event) {
     if (event.key === "Enter") {
       event.preventDefault(); // mencegah reload form
-      filterByPlace();
-      const input = document.getElementById("placeInput");
-      setTimeout(() => input.select(), 500); // pilih lagi teks biar siap scan berikutnya
+      filterByPlace(); // langsung tampilkan data
     }
   }
 </script>
