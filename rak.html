@@ -86,7 +86,7 @@
   }
 
   .layout-2 {
-    grid-template-columns: repeat(2, 9cm); /* dua kolom lebar 9cm */
+    grid-template-columns: repeat(2, 9cm);
     justify-content: center;
   }
 
@@ -103,7 +103,7 @@
     box-sizing: border-box;
   }
 
-  /* ✅ Ukuran tiap layout */
+  /* Ukuran Layout */
   .layout-1 .sticker {
     height: 200px;
     padding: 16px 20px;
@@ -117,40 +117,40 @@
 
   /* Kode besar */
   .code-box {
-    flex: 0 0 80px;
+    flex: 0 0 100px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .code {
-    font-size: 35px;
-    font-weight: 700;
+    font-size: 60px; /* 🔥 lebih besar */
+    font-weight: 800;
     color: #e76f51;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
   }
 
   /* Panah */
   .arrow-tip {
-    flex: 0 0 50px;
+    flex: 0 0 45px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .arrow {
-    width: 28px;
-    height: 28px;
+    width: 45px;
+    height: 45px;
     border-radius: 50%;
     background: #fff;
     display: grid;
     place-items: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
 
   .arrow svg {
-    width: 22px;
-    height: 22px;
+    width: 35px;
+    height: 35px;
   }
 
   /* Barcode */
@@ -174,10 +174,10 @@
   }
 
   .barcode-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #555;
-    margin-top: 3px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-top: 4px;
     text-align: center;
   }
 
@@ -281,7 +281,7 @@ document.getElementById('generate').addEventListener('click', () => {
     JsBarcode(`#barcode-${code}`, code.toUpperCase(), {
       format: 'CODE128',
       width: layout === "2" ? 1.8 : 3,
-      height: layout === "2" ? 32 : 100,
+      height: layout === "2" ? 35 : 100,
       displayValue: false,
       margin: 1
     });
