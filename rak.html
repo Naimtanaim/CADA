@@ -101,19 +101,16 @@
     justify-content: space-between;
     gap: 8px;
     box-sizing: border-box;
-    page-break-inside: avoid; /* ✅ agar tidak terpotong */
   }
 
   /* Ukuran Layout */
   .layout-1 .sticker {
-    height: 6cm;
-    width: 18cm;
+    height: 200px;
     padding: 16px 20px;
-    margin: 0 auto;
   }
 
   .layout-2 .sticker {
-    width: 9cm;
+    width: 8cm;
     height: 5cm;
     padding: 8px 10px;
   }
@@ -127,7 +124,7 @@
   }
 
   .code {
-    font-size: 60px;
+    font-size: 60px; /* 🔥 lebih besar */
     font-weight: 800;
     color: #e76f51;
     letter-spacing: 3px;
@@ -173,12 +170,7 @@
 
   .layout-2 .barcode-area svg {
     width: 90%;
-    height: 45px;
-  }
-
-  .layout-1 .barcode-area svg {
-    width: 85%;
-    height: 70px;
+    height: 50px;
   }
 
   .barcode-label {
@@ -189,37 +181,12 @@
     text-align: center;
   }
 
-  /* ✅ Setting untuk print agar tidak terpotong */
   @media print {
-    body {
-      background: white;
-      margin: 0;
-    }
-
-    .controls {
-      display: none !important;
-    }
-
-    .sticker-area {
-      padding: 0;
-      margin: 0;
-    }
-
-    .stickers {
-      gap: 10px;
-      justify-content: center;
-      page-break-inside: avoid;
-    }
-
-    .sticker {
-      page-break-inside: avoid !important;
-      break-inside: avoid !important;
-    }
-
-    @page {
-      size: A4;
-      margin: 8mm; /* 🔧 bisa diubah misal ke 5mm kalau mau lebih rapat */
-    }
+    body * { visibility: hidden; }
+    .stickers, .stickers * { visibility: visible; }
+    .stickers { position: absolute; left: 0; top: 0; width: 100%; }
+    .controls { display: none; }
+    body { background: white; margin: 0; }
   }
 </style>
 </head>
@@ -314,7 +281,7 @@ document.getElementById('generate').addEventListener('click', () => {
     JsBarcode(`#barcode-${code}`, code.toUpperCase(), {
       format: 'CODE128',
       width: layout === "2" ? 1.8 : 3,
-      height: layout === "2" ? 35 : 70,
+      height: layout === "2" ? 35 : 100,
       displayValue: false,
       margin: 1
     });
