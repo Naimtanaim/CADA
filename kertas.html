@@ -102,7 +102,6 @@
 <body>
 <div class="container">
   <div class="actions">
-    <!-- 🔧 input aktif, enter trigger, auto kosong setelah tampil -->
     <input id="placeInput" type="text" placeholder="例如：A1" autofocus onkeydown="handleEnter(event)">
     <button onclick="filterByPlace()">查詢</button>
     <button class="ghost" onclick="refreshData()">刷新資料</button>
@@ -121,8 +120,6 @@
         <svg id="mainBarcode"></svg>
       </div>
     </div>
-
-    <div class="filter-bar"></div>
 
     <table id="dataTable">
       <thead>
@@ -181,8 +178,9 @@
   }
   makeMainBarcode("出貨課");
 
-  // === REFRESH DATA ===
+  // === REFRESH DATA (tampilkan input kembali) ===
   async function refreshData() {
+    document.getElementById("placeInput").style.display = "inline-block"; // tampilkan lagi input
     const { data, error } = await supabase
       .from("gudang_penyimpanan")
       .select("*")
@@ -212,7 +210,6 @@
       .eq("place", place)
       .order("id", { ascending: false });
 
-    // === Hapus duplikat berdasarkan barcode ===
     let uniqueData = [];
     let seen = new Set();
     data?.forEach((row) => {
@@ -222,18 +219,16 @@
       }
     });
 
-    // === Urutkan berdasarkan barcode (A→Z) ===
     uniqueData.sort((a, b) => (a.barcode || "").localeCompare(b.barcode || ""));
 
-    // === Update label dan barcode atas ===
     placeLabel.textContent = "存放位置：" + place;
     makeMainBarcode(place);
 
     renderTable(uniqueData, error);
 
-    // 🔧 Hapus isi input & fokuskan kembali setelah selesai
+    // 🔧 Kosongkan dan sembunyikan input setelah tampil
     input.value = "";
-    setTimeout(() => input.focus(), 300);
+    input.style.display = "none";
   }
 
   // === RENDER TABEL ===
@@ -267,7 +262,6 @@
       `;
       tbody.appendChild(tr);
 
-      // === Buat barcode kecil per baris ===
       const svgSmall = document.getElementById(`bc-${row.id}`);
       JsBarcode(svgSmall, row.barcode || " ", {
         format: "CODE128",
@@ -281,8 +275,8 @@
   // === HANDLE SCAN BARCODE ===
   function handleEnter(event) {
     if (event.key === "Enter") {
-      event.preventDefault(); // mencegah reload form
-      filterByPlace(); // langsung tampilkan data
+      event.preventDefault();
+      filterByPlace();
     }
   }
 </script>
