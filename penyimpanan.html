@@ -286,7 +286,7 @@ placeInput.addEventListener('change', async () => {
     lastCustomer = data[0].customer;
     showPopup(`✅ Customer terdeteksi: ${lastCustomer}`, 'success');
   } else {
-    showPopup(`✅ Tempat ${place} masih kosong`, 'success');
+  //  showPopup(`✅ Tempat ${place} masih kosong`, 'success');
   }
 
   barcodeInput.disabled = false;
@@ -317,7 +317,7 @@ barcodeInput.addEventListener('change', async () => {
   if (lastCustomer) {
     const different = rows.find(r => r.customer !== lastCustomer);
     if (different) {
-      showPopup(`🚫 Customer tidak cocok! (Tempat ini: ${lastCustomer})`, 'error');
+      showPopup(`🚫 Barang tidak sama! (: ${lastCustomer})`, 'error');
       barcodeInput.value = '';
       barcodeInput.focus();
       return;
