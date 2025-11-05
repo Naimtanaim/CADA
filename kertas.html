@@ -23,6 +23,7 @@
     justify-content: flex-end;
     gap: 10px;
     margin-bottom: 12px;
+    flex-wrap: wrap;
   }
   button {
     background: #0b6cff;
@@ -34,6 +35,7 @@
     font-weight: 600;
   }
   button.ghost { background: #fff; color: #0b6cff; border: 1px solid #d4d9ef; }
+  button.danger { background: #e63946; color: white; }
   .sheet {
     background: white;
     border-radius: 6px;
@@ -92,7 +94,7 @@
     border-radius: 6px;
   }
   @media print {
-    .actions, .filter-bar { display: none; }
+    .actions, .filter-bar, .danger { display: none; }
     body { background: white; }
     .sheet { box-shadow: none; border-radius: 0; }
   }
@@ -102,9 +104,10 @@
 <body>
 <div class="container">
   <div class="actions">
-    <input id="placeInput" type="text" placeholder="例如：A1" autofocus onkeydown="handleEnter(event)">
+    <input id="placeInput" type="text" placeholder="">
     <button onclick="filterByPlace()">查詢</button>
     <button class="ghost" onclick="refreshData()">刷新資料</button>
+    <button class="danger" onclick="keluarkanBarang()">📦 出貨 / Keluarkan Barang</button>
     <button onclick="window.print()">🖨️ 列印</button>
   </div>
 
@@ -178,20 +181,9 @@
   }
   makeMainBarcode("出貨課");
 
-  // === REFRESH DATA ===
-  async function refreshData() {
-    const { data, error } = await supabase
-      .from("gudang_penyimpanan")
-      .select("*")
-      .order("id", { ascending: false })
-      .limit(10);
-    renderTable(data, error);
-  }
-
   // === FILTER BERDASARKAN PLACE ===
   async function filterByPlace() {
-    const input = document.getElementById("placeInput");
-    const place = input.value.trim();
+    const place = document.getElementById("placeInput").value.trim();
     const tbody = document.getElementById("tableBody");
     const placeLabel = document.getElementById("placeLabel");
     tbody.innerHTML = `<tr><td colspan="7">載入中...</td></tr>`;
@@ -209,6 +201,7 @@
       .eq("place", place)
       .order("id", { ascending: false });
 
+    // === Hapus duplikat berdasarkan barcode ===
     let uniqueData = [];
     let seen = new Set();
     data?.forEach((row) => {
@@ -218,18 +211,14 @@
       }
     });
 
+    // === Urutkan berdasarkan barcode (A→Z) ===
     uniqueData.sort((a, b) => (a.barcode || "").localeCompare(b.barcode || ""));
 
+    // === Update label dan barcode atas ===
     placeLabel.textContent = "存放位置：" + place;
     makeMainBarcode(place);
 
     renderTable(uniqueData, error);
-
-    // 🔧 Kosongkan teks input setelah tampil (tetapi jangan sembunyikan)
-    setTimeout(() => {
-      input.value = "";
-      input.focus();
-    }, 200);
   }
 
   // === RENDER TABEL ===
@@ -263,6 +252,7 @@
       `;
       tbody.appendChild(tr);
 
+      // === Buat barcode kecil per baris ===
       const svgSmall = document.getElementById(`bc-${row.id}`);
       JsBarcode(svgSmall, row.barcode || " ", {
         format: "CODE128",
@@ -273,12 +263,40 @@
     });
   }
 
-  // === HANDLE SCAN BARCODE ===
-  function handleEnter(event) {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      filterByPlace();
+  // === KELUARKAN BARANG (DELETE DARI SUPABASE) ===
+  async function keluarkanBarang() {
+    const place = document.getElementById("placeInput").value.trim();
+    if (!place) {
+      alert("⚠️ Masukkan lokasi tempat terlebih dahulu!");
+      return;
     }
+
+    if (!confirm(`Yakin ingin mengeluarkan semua barang dari lokasi "${place}"?`)) return;
+
+    const { error } = await supabase
+      .from("gudang_penyimpanan")
+      .delete()
+      .eq("place", place);
+
+    if (error) {
+      alert("❌ Gagal menghapus data: " + error.message);
+    } else {
+      alert("✅ Barang berhasil dikeluarkan dan tempat dikosongkan.");
+      document.getElementById("tableBody").innerHTML =
+        `<tr><td colspan="7">✅ Tempat ${place} sudah kosong dan siap digunakan lagi.</td></tr>`;
+      document.getElementById("placeLabel").textContent = "";
+      makeMainBarcode("出貨課");
+    }
+  }
+
+  // === REFRESH DATA ===
+  async function refreshData() {
+    const { data, error } = await supabase
+      .from("gudang_penyimpanan")
+      .select("*")
+      .order("id", { ascending: false })
+      .limit(10);
+    renderTable(data, error);
   }
 </script>
 </body>
