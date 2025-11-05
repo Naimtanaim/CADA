@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Riwayat Barang Keluar - 出貨紀錄</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  body {
+    font-family: "Inter", "Microsoft JhengHei", sans-serif;
+    background: #f5f6fa;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    padding: 20px 24px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+
+  h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  input, select {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  button:hover { background: #0056d2; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  th, td {
+    border: 1px solid #e2e6ef;
+    padding: 8px;
+    text-align: center;
+  }
+
+  th {
+    background: #f2f4fa;
+    font-weight: bold;
+  }
+
+  tr:nth-child(even) {
+    background: #fafbff;
+  }
+
+  .empty {
+    text-align: center;
+    color: #777;
+    padding: 20px 0;
+  }
+
+  @media print {
+    .actions { display: none; }
+    body { background: white; }
+  }
+</style>
+</head>
+
+<body>
+<div class="container">
+  <h1>📦 Riwayat Barang Keluar</h1>
+
+  <div class="actions">
+    <div>
+      <input type="text" id="searchInput" placeholder="Cari nama barang / tempat...">
+      <select id="sortOrder">
+        <option value="desc">Urut: Terbaru</option>
+        <option value="asc">Urut: Terlama</option>
+      </select>
+      <button onclick="loadRiwayat()">🔍 Tampilkan</button>
+    </div>
+    <div>
+      <button onclick="window.print()">🖨️ Cetak</button>
+    </div>
+  </div>
+
+  <table id="riwayatTable">
+    <thead>
+      <tr>
+        <th>No</th>
+        <th>Tempat</th>
+        <th>Barcode</th>
+        <th>Nama Barang</th>
+        <th>Tanggal Keluar</th>
+        <th>Nama Karyawan</th>
+      </tr>
+    </thead>
+    <tbody id="riwayatBody">
+      <tr><td colspan="6" class="empty">Memuat data...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+  const SUPABASE_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  async function loadRiwayat() {
+    const search = document.getElementById("searchInput").value.trim();
+    const order = document.getElementById("sortOrder").value;
+    const tbody = document.getElementById("riwayatBody");
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">⏳ Memuat data...</td></tr>`;
+
+    let query = supabase.from("riwayat_keluar").select("*");
+
+    if (search) {
+      query = query.or(`place.ilike.%${search}%,nama_barang.ilike.%${search}%`);
+    }
+
+    query = query.order("tanggal_keluar", { ascending: order === "asc" });
+
+    const { data, error } = await query;
+
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty">❌ ${error.message}</td></tr>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" class="empty">Belum ada riwayat keluar</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = "";
+    data.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      const tanggal = new Date(r.tanggal_keluar).toLocaleString("zh-TW");
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${r.place}</td>
+        <td>${r.barcode}</td>
+        <td>${r.nama_barang || "-"}</td>
+        <td>${tanggal}</td>
+        <td>${r.nama_karyawan || "-"}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // auto load saat halaman dibuka
+  loadRiwayat();
+</script>
+</body>
+</html>
