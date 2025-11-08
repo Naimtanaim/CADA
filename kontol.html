@@ -32,14 +32,18 @@ button:hover { background: #084bc9; }
 .close-btn:hover { background:#a71d2a; }
 
 .modal-content table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.modal-content th, .modal-content td { border-bottom: 1px solid #ddd; padding: 6px; text-align: center; }
+.modal-content th, .modal-content td { border: 1px solid #333; padding: 6px; text-align: center; }
 .barcode-thumb svg { height: 40px; width: 150px; }
 
-/* Hanya print area yang terlihat saat print */
+/* Print styles */
 @media print {
   body * { visibility: hidden; }
   #printArea, #printArea * { visibility: visible; }
-  #printArea { position: absolute; left: 0; top: 0; width: 100%; }
+  #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 10px; font-size: 12px; }
+  #printArea table { border-collapse: collapse; width: 100%; }
+  #printArea th, #printArea td { border:1px solid #333; padding:4px; text-align:center; font-size:12px; }
+  #printArea h2 { margin-bottom:10px; }
+  .barcode-thumb svg { height:40px; width:150px; }
 }
 </style>
 </head>
@@ -189,10 +193,14 @@ async function showDetail(orderNo){
     if(svg) JsBarcode(svg, d.barcode || " ", {format:"CODE128", displayValue:false, height:40, margin:0});
   });
 
-  // Print area hanya detail
+  // Print area full layout
   document.getElementById("printArea").innerHTML = `
-    <h2 style="text-align:center;">出貨明細單</h2>
-    <div style="margin-bottom:10px;">出貨單號：${orderNo}</div>
+    <div style="text-align:center; margin-bottom:10px;">
+      <h2>出貨明細單</h2>
+      <div>出貨單號：${orderNo}</div>
+      <div>客戶：${data[0]?.customer||""}</div>
+      <div style="margin-bottom:10px;">日期：${data[0]?.shipped_at ? new Date(data[0].shipped_at).toLocaleString("zh-TW") : ""}</div>
+    </div>
     ${html}`;
 }
 
@@ -200,9 +208,9 @@ function closeModal(){ document.getElementById("detailModal").style.display="non
 
 function printDetail(){
   const printArea = document.getElementById("printArea");
-  printArea.style.display="block"; // tampilkan area cetak
-  window.print(); // cetak
-  printArea.style.display="none"; // sembunyikan setelah print
+  printArea.style.display="block";
+  window.print();
+  printArea.style.display="none";
 }
 
 refreshData();
