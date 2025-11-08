@@ -4,8 +4,12 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>出貨紀錄 (Riwayat Barang Keluar)</title>
+
+<!-- Supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- JsBarcode -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
 <style>
 body { font-family: "Noto Sans TC", sans-serif; background: #f7f9fc; padding: 20px; margin: 0; }
 .container { max-width: 1000px; margin: 0 auto; }
@@ -32,7 +36,7 @@ button:hover { background: #084bc9; }
 .close-btn:hover { background:#a71d2a; }
 
 .modal-content table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.modal-content th, .modal-content td { border: 1px solid #333; padding: 6px; text-align: center; }
+.modal-content th, .modal-content td { border:1px solid #333; padding: 6px; text-align: center; }
 .barcode-thumb svg { height: 40px; width: 150px; }
 
 /* Print styles */
@@ -95,9 +99,10 @@ button:hover { background: #084bc9; }
 
 <script>
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"; // ganti dengan key Anda
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Refresh summary
 async function refreshData() {
   const tbody = document.getElementById("summaryBody");
   tbody.innerHTML = `<tr><td colspan="4">載入中...</td></tr>`;
@@ -106,6 +111,7 @@ async function refreshData() {
   renderSummary(data);
 }
 
+// Apply filter
 async function applyFilters() {
   const name = document.getElementById("customerSearch").value.trim();
   const dateFrom = document.getElementById("dateFrom").value;
@@ -119,6 +125,7 @@ async function applyFilters() {
   renderSummary(data);
 }
 
+// Render summary table
 function renderSummary(data){
   const tbody = document.getElementById("summaryBody");
   tbody.innerHTML = "";
@@ -153,72 +160,68 @@ function renderSummary(data){
   });
 }
 
-async function showDetail(orderNo){
-  const { data, error } = await supabase.from("barang_dikirim").select("*").eq("customer_order_number", orderNo);
-  if(error){ alert("載入錯誤: "+error.message); return; }
+// Show detail modal + barcode
+function showDetail(orderNo){
+  supabase.from("barang_dikirim").select("*").eq("customer_order_number", orderNo)
+    .then(({data,error})=>{
+      if(error){ alert("載入錯誤: "+error.message); return; }
 
-  const htmlTable = `
-    <table>
-      <thead>
-        <tr>
-          <th>No.</th>
-          <th>條碼</th>
-          <th>箱號</th>
-          <th>公司號</th>
-          <th>包裝數量</th>
-          <th>客戶訂單號</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.map((d,i)=>`
-          <tr>
-            <td>${i+1}</td>
-            <td><div class="barcode-thumb" id="print-bc-${i}"></div><div>${d.barcode||""}</div></td>
-            <td>${d.box_number||""}</td>
-            <td>${d.company_number||""}</td>
-            <td>${d.packaging_quantity||""}</td>
-            <td>${d.customer_order_number||""}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>`;
+      const htmlTable = `
+        <table>
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>條碼</th>
+              <th>箱號</th>
+              <th>公司號</th>
+              <th>包裝數量</th>
+              <th>客戶訂單號</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${data.map((d,i)=>`
+              <tr>
+                <td>${i+1}</td>
+                <td><div class="barcode-thumb" id="print-bc-${i}"></div><div>${d.barcode||""}</div></td>
+                <td>${d.box_number||""}</td>
+                <td>${d.company_number||""}</td>
+                <td>${d.packaging_quantity||""}</td>
+                <td>${d.customer_order_number||""}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>`;
 
-  document.getElementById("detailContent").innerHTML = htmlTable;
-  document.getElementById("detailModal").style.display = "flex";
-  document.getElementById("detailTitle").textContent = `出貨明細：${orderNo}`;
+      document.getElementById("detailContent").innerHTML = htmlTable;
+      document.getElementById("detailModal").style.display = "flex";
+      document.getElementById("detailTitle").textContent = `出貨明細：${orderNo}`;
 
-  // Prepare print area
-  const printArea = document.getElementById("printArea");
-  printArea.innerHTML = `
-    <div style="text-align:center; margin-bottom:10px;">
-      <h2>出貨明細單</h2>
-      <div>出貨單號：${orderNo}</div>
-      <div>客戶：${data[0]?.customer||""}</div>
-      <div style="margin-bottom:10px;">日期：${data[0]?.shipped_at ? new Date(data[0].shipped_at).toLocaleString("zh-TW") : ""}</div>
-    </div>
-    ${htmlTable}`;
+      // Print area
+      const printArea = document.getElementById("printArea");
+      printArea.innerHTML = htmlTable;
 
-  // Generate barcode in print area
-  data.forEach((d,i)=>{
-    const div = document.getElementById(`print-bc-${i}`);
-    if(div){
-      const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-      div.appendChild(svg);
-      JsBarcode(svg, d.barcode || " ", {format:"CODE128", displayValue:false, height:40, margin:0});
-    }
-  });
+      // Generate barcode di print area
+      data.forEach((d,i)=>{
+        const div = document.getElementById(`print-bc-${i}`);
+        if(div){
+          const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+          div.appendChild(svg);
+          JsBarcode(svg, d.barcode || " ", {format:"CODE128", displayValue:false, height:40, margin:0});
+        }
+      });
+    });
 }
-
-function closeModal(){ document.getElementById("detailModal").style.display="none"; }
 
 function printDetail(){
   const printArea = document.getElementById("printArea");
-  printArea.style.display="block";
+  printArea.style.display = "block";
   setTimeout(()=>{
     window.print();
-    printArea.style.display="none";
-  },300);
+    printArea.style.display = "none";
+  }, 300);
 }
+
+function closeModal(){ document.getElementById("detailModal").style.display="none"; }
 
 refreshData();
 </script>
