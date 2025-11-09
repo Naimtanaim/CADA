@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sistem Gudang Multi-Rak Supabase</title>
+<style>
+:root {
+  --bg: #f8fafc;
+  --accent: #10b981;
+  --accent-dark: #059669;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --alert: #ef4444; /* merah untuk customer */
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+select, button {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 14px;
+}
+button {
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+button:hover {
+  background: var(--accent-dark);
+}
+#status {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.box {
+  border-radius: 16px;
+  padding: 20px 10px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.box.empty {
+  background: #e5e7eb;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+}
+.box.filled {
+  background: var(--accent);
+  color: white;
+  border: 2px solid var(--accent-dark);
+}
+.box.customer {
+  background: var(--alert);
+  color: white;
+  border: 2px solid #b91c1c;
+}
+.slot-id {
+  font-size: 14px;
+  opacity: 0.9;
+}
+.customer {
+  font-size: 17px;
+  font-weight: 700;
+  margin-top: 8px;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+footer {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<h1>📦 Sistem tempat</h1>
+
+<div class="toolbar">
+  <label for="rakSelect">Rak:</label>
+  <select id="rakSelect"></select>
+  <button id="syncBtn">🔄 Sinkronkan Data</button>
+</div>
+
+<div id="status">Status: Menghubungkan ke Supabase...</div>
+<div class="grid" id="grid"></div>
+
+
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js";
+
+const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const rakSelect = document.getElementById("rakSelect");
+const grid = document.getElementById("grid");
+const status = document.getElementById("status");
+const syncBtn = document.getElementById("syncBtn");
+
+const rakList = "ABCDEFGHIJ".split("");
+let slotPerRak = {};
+let currentRak = "A";
+let gudangData = [];
+
+// Inisialisasi dropdown rak
+rakList.forEach(r => {
+  const opt = document.createElement("option");
+  opt.value = r;
+  opt.textContent = `Rak ${r}`;
+  rakSelect.appendChild(opt);
+});
+rakSelect.value = currentRak;
+
+// Helper
+const formatID = (r, n) => r + String(n).padStart(2, "0");
+const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
+
+// Load konfigurasi rak dari Supabase
+async function loadRakConfig() {
+  const { data, error } = await supabase.from("rak_konfigurasi").select("*");
+  if (error) {
+    console.error("Gagal memuat konfigurasi rak:", error);
+    rakList.forEach(r => slotPerRak[r] = 15);
+    return;
+  }
+  slotPerRak = {};
+  rakList.forEach(r => slotPerRak[r] = 15);
+  data.forEach(row => slotPerRak[row.rak_id] = row.slot_count);
+}
+
+// Load data gudang
+async function loadData() {
+  status.textContent = "Status: Mengambil data dari Supabase...";
+  try {
+    const { data, error } = await supabase.from("gudang_penyimpanan").select("*");
+    if (error) throw error;
+    gudangData = data || [];
+    status.textContent = ` ${gudangData.length} data ditemukan`;
+    render();
+  } catch (e) {
+    console.error(e);
+    status.textContent = "❌ Gagal mengambil data dari Supabase";
+  }
+}
+
+// Render kotak
+function render() {
+  grid.innerHTML = "";
+  const totalSlot = slotPerRak[currentRak] || 15;
+
+  for (let i = 1; i <= totalSlot; i++) {
+    const id = formatID(currentRak, i);
+    const item = gudangData.find(d => normalize(d.place) === id);
+
+    const box = document.createElement("div");
+    if (item && item.customer) {
+      box.className = "box customer"; // merah jika ada customer
+    } else if (item && item.packaging_board) {
+      box.className = "box filled"; 
+    } else {
+      box.className = "box empty"; 
+    }
+
+    const slot = document.createElement("div");
+    slot.className = "slot-id";
+    slot.textContent = id;
+
+    const cust = document.createElement("div");
+    cust.className = "customer";
+    cust.textContent = item ? (item.customer || "") : "";
+
+    box.appendChild(slot);
+    box.appendChild(cust);
+    grid.appendChild(box);
+  }
+}
+
+// Event
+rakSelect.addEventListener("change", () => {
+  currentRak = rakSelect.value;
+  render();
+});
+
+syncBtn.addEventListener("click", loadData);
+
+// Inisialisasi
+(async () => {
+  await loadRakConfig();
+  await loadData();
+})();
+</script>
+</body>
+</html>
