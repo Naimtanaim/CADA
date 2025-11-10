@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>出貨課1.04 - 可編輯可刪除 + Enter 搜尋</title>
+  <title>出貨課1.04 - 搜尋訂單資料</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; }
@@ -55,34 +55,6 @@
     }
     tr:nth-child(even) { background-color: #fff; }
     tr:nth-child(odd) { background-color: #f9f9f9; }
-
-    #editModal {
-      display: none;
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center; align-items: center;
-      z-index: 200;
-    }
-    #editModal .modal-content {
-      background: white; padding: 20px; border-radius: 6px;
-      width: 300px; text-align: center;
-    }
-    #editModal input {
-      width: 90%; padding: 6px; margin: 6px 0;
-    }
-
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      .printable {
-        visibility: hidden;
-      }
-      .printable.show-print {
-        visibility: visible !important;
-      }
-    }
   </style>
 </head>
 <body>
@@ -106,8 +78,6 @@
         公司號: <input type="text" id="searchCompany" />
         存放位置: <input type="text" id="searchPlace" />
         <button onclick="loadData()">🔄 重新整理</button>
-        <button onclick="massEdit()">✏️ 編輯所選</button>
-        <button onclick="deleteSelected()">🗑️ 刪除所選</button>
       </div>
 
       <p id="countInfo" style="margin:6px 10px;">載入中...</p>
@@ -116,7 +86,6 @@
         <table>
           <thead>
             <tr>
-              <th><input type="checkbox" id="selectAll" onchange="toggleAll(this)" /></th>
               <th>NO</th>
               <th>箱號</th>
               <th>備料單號</th>
@@ -133,25 +102,10 @@
             </tr>
           </thead>
           <tbody id="dataBody">
-            <tr><td colspan="14">資料載入中...</td></tr>
+            <tr><td colspan="13">資料載入中...</td></tr>
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- Modal Edit -->
-  <div id="editModal">
-    <div class="modal-content">
-      <h4>✏️ 批次修改</h4>
-      <label>NO：</label><br>
-      <input type="text" id="editBoard" placeholder=""><br>
-      <label>打包人員：</label><br>
-      <input type="text" id="editPacker" placeholder=""><br>
-      <label>存放位置：</label><br>
-      <input type="text" id="editPlace" placeholder=""><br>
-      <button onclick="applyMassEdit()">💾 儲存變更</button>
-      <button onclick="closeModal()">❌ 取消</button>
     </div>
   </div>
 
@@ -162,7 +116,7 @@
 
     async function loadData() {
       const tbody = document.getElementById("dataBody");
-      tbody.innerHTML = "<tr><td colspan='14'>🔄 載入中...</td></tr>";
+      tbody.innerHTML = "<tr><td colspan='13'>🔄 載入中...</td></tr>";
 
       const c = document.getElementById("searchCustomer").value.trim();
       const o = document.getElementById("searchOrder").value.trim();
@@ -179,12 +133,12 @@
 
       const { data, error } = await query;
       if (error) {
-        tbody.innerHTML = `<tr><td colspan='14' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan='13' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
         return;
       }
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='14'>⚠️ 無資料</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='13'>⚠️ 無資料</td></tr>";
         document.getElementById("countInfo").textContent = "📦 無資料";
         return;
       }
@@ -194,7 +148,6 @@
       data.forEach(row => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td><input type="checkbox" class="selectRow" data-id="${row.id}" data-barcode="${row.box_number}" /></td>
           <td>${row.packaging_board || ""}</td>
           <td>${row.box_number || ""}</td>
           <td>${row.material_order_number || ""}</td>
@@ -213,96 +166,10 @@
       });
     }
 
-    // Toggle select all
-    function toggleAll(master) {
-      document.querySelectorAll(".selectRow").forEach(cb => cb.checked = master.checked);
-    }
-
-    async function deleteSelected() {
-      const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
-      if (checkedBoxes.length === 0) return alert("⚠️ 請先選擇資料");
-      if (!confirm(`確定刪除 ${checkedBoxes.length} 筆資料？\n刪除後資料將返回原始資料庫。`)) return;
-
-      for (const cb of checkedBoxes) {
-        const id = cb.dataset.id;
-        const barcode = cb.dataset.barcode;
-
-        const { data: recordData, error: fetchError } = await supabaseClient
-          .from("gudang_penyimpanan")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (fetchError || !recordData) continue;
-
-        await supabaseClient.from("gudang_penyimpanan").delete().eq("id", id);
-
-        const originalData = {
-          box_number: recordData.box_number,
-          customer: recordData.customer,
-          company_number: recordData.company_number,
-          packaging_quantity: recordData.packaging_quantity,
-          material_order_number: recordData.material_order_number,
-          original_material_order_number: recordData.original_material_order_number,
-          customer_order_number: recordData.customer_order_number,
-          delivery_order_number: recordData.delivery_order_number,
-          packaging_time: recordData.packaging_time,
-        };
-
-        await supabaseClient.from("data").insert([originalData]);
-      }
-
-      alert(`✅ 已刪除並還原 ${checkedBoxes.length} 筆資料`);
-      loadData();
-    }
-
-    function massEdit() {
-      const checked = document.querySelectorAll(".selectRow:checked");
-      if (checked.length === 0) return alert("⚠️ 請先選擇要編輯的資料");
-      document.getElementById("editModal").style.display = "flex";
-    }
-
-    function closeModal() {
-      document.getElementById("editModal").style.display = "none";
-      document.getElementById("editBoard").value = "";
-      document.getElementById("editPacker").value = "";
-      document.getElementById("editPlace").value = "";
-    }
-
-    async function applyMassEdit() {
-      const checkedBoxes = Array.from(document.querySelectorAll(".selectRow:checked"));
-      const ids = checkedBoxes.map(cb => cb.dataset.id);
-      if (ids.length === 0) return alert("⚠️ 未選擇資料");
-
-      const board = document.getElementById("editBoard").value.trim();
-      const packer = document.getElementById("editPacker").value.trim();
-      const place = document.getElementById("editPlace").value.trim();
-      if (!board && !packer && !place) return alert("⚠️ 請輸入要更新的內容");
-
-      const updateData = {};
-      if (board) updateData.packaging_board = board;
-      if (packer) updateData.packer = packer;
-      if (place) updateData.place = place;
-
-      const { error } = await supabaseClient
-        .from("gudang_penyimpanan")
-        .update(updateData)
-        .in("id", ids);
-
-      if (error) return alert("❌ 更新失敗: " + error.message);
-
-      closeModal();
-      alert(`✅ 已更新 ${ids.length} 筆資料`);
-      loadData();
-    }
-
-    // === Event Enter untuk semua input pencarian ===
-    const searchInputs = ["searchCustomer","searchOrder","searchDelivery","searchCompany","searchPlace"];
-    searchInputs.forEach(id => {
+    // Tekan Enter untuk mencari langsung
+    ["searchCustomer","searchOrder","searchDelivery","searchCompany","searchPlace"].forEach(id => {
       const input = document.getElementById(id);
-      input.addEventListener("keypress", function(e){
-        if(e.key === "Enter") loadData();
-      });
+      input.addEventListener("keypress", e => { if (e.key === "Enter") loadData(); });
     });
 
     document.addEventListener("DOMContentLoaded", loadData);
