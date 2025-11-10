@@ -164,10 +164,28 @@ th {
     <span id="packerName" style="font-weight:bold;color:#ff9800;"></span>
   </div>
   
-  <div class="row">
-    <label>Tempat 存放位置:</label>
-    <input type="text" id="placeInput" placeholder="" disabled>
-  </div>
+<div class="row">
+  <label>Tempat 存放位置:</label>
+  <input type="text" id="placeInput" placeholder="" disabled>
+</div>
+
+<script>
+  // Jika value diisi oleh scanner atau script lain
+  const placeInput = document.getElementById('placeInput');
+
+  // Pantau setiap perubahan value
+  const observer = new MutationObserver(() => {
+    placeInput.value = placeInput.value.toUpperCase();
+  });
+
+  observer.observe(placeInput, { attributes: true, attributeFilter: ['value'] });
+
+  // Jika kamu isi value lewat script manual, bisa juga panggil ini:
+  function setPlace(value) {
+    placeInput.value = value.toUpperCase();
+  }
+</script>
+
 
   <div class="row">
     <label>Barcode:</label>
