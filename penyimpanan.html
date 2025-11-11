@@ -166,7 +166,7 @@ th {
   
   <div class="row">
     <label>Tempat 存放位置:</label>
-    <input type="text" id="placeInput" placeholder="" disabled>
+    <input type="text" id="placeInput" placeholder="" disabled style="text-transform:uppercase;">
   </div>
 
   <div class="row">
@@ -230,6 +230,11 @@ function showPopup(message, type = "error", duration = 5000) {
 
 window.onload = () => packerCodeInput.focus();
 
+// 🔠 otomatis ubah huruf besar pada tempat
+placeInput.addEventListener('input', () => {
+  placeInput.value = placeInput.value.toUpperCase();
+});
+
 packerCodeInput.addEventListener('change', async () => {
   const code = packerCodeInput.value.trim();
   if (!code) return;
@@ -255,7 +260,7 @@ packerCodeInput.addEventListener('change', async () => {
 });
 
 placeInput.addEventListener('change', async () => {
-  const place = placeInput.value.trim();
+  const place = placeInput.value.trim().toUpperCase();
   if (!place) {
     showPopup('⚠️ Tempat belum diisi!', 'warning');
     return;
@@ -286,8 +291,6 @@ placeInput.addEventListener('change', async () => {
 
     lastCustomer = data[0].customer;
     showPopup(`✅ Customer terdeteksi: ${lastCustomer}`, 'success');
-  } else {
-  //  showPopup(`✅ Tempat ${place} masih kosong`, 'success');
   }
 
   barcodeInput.disabled = false;
@@ -296,7 +299,7 @@ placeInput.addEventListener('change', async () => {
 
 barcodeInput.addEventListener('change', async () => {
   const barcode = barcodeInput.value.trim();
-  const place = placeInput.value.trim();
+  const place = placeInput.value.trim().toUpperCase();
   if (!barcode || !place || !currentPackerName) {
     showPopup('⚠️ Lengkapi data karyawan & tempat!', 'warning');
     barcodeInput.value = '';
