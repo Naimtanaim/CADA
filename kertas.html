@@ -22,7 +22,7 @@
   th, td { border:1px solid #dfe3ee; padding:8px 10px; text-align:center; }
   th { background:#f9fafc; font-weight:bold; }
   .barcode-thumb svg { height:40px; width:180px; }
-  input[type=text] { padding:8px 10px; border:1px solid #ccc; border-radius:6px; }
+  input[type=text] { padding:8px 10px; border:1px solid #ccc; border-radius:6px; text-transform:uppercase; }
   @media print { .actions { display:none; } body { background:white; } .sheet { box-shadow:none; border-radius:0; } }
   .toast { visibility:hidden; min-width:200px; margin-left:-100px; background-color:#333; color:#fff; text-align:center; border-radius:8px; padding:12px; position:fixed; z-index:9999; left:50%; bottom:30px; font-size:14px; opacity:0; transition:opacity 0.5s,bottom 0.5s; }
   .toast.show { visibility:visible; opacity:1; bottom:50px; }
@@ -112,7 +112,7 @@ async function refreshData(){
 
 async function filterByPlace(){
   const input = document.getElementById("placeInput");
-  const place = input.value.trim();
+  const place = input.value.trim().toUpperCase(); // selalu uppercase
   const tbody = document.getElementById("tableBody");
   const placeLabel = document.getElementById("placeLabel");
   tbody.innerHTML = `<tr><td colspan="7">載入中...</td></tr>`;
@@ -186,6 +186,12 @@ async function shipAll(){
 }
 
 function handleEnter(event){ if(event.key==="Enter"){ event.preventDefault(); filterByPlace(); } }
+
+// 🔠 Otomatis ubah input ke huruf besar
+const placeInput = document.getElementById("placeInput");
+placeInput.addEventListener("input", () => {
+  placeInput.value = placeInput.value.toUpperCase();
+});
 </script>
 </body>
 </html>
