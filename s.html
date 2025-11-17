@@ -232,13 +232,13 @@ async function loadRakConfig() {
   const { data, error } = await supabase.from("rak_konfigurasi").select("*");
   if (error) {
     console.error(error);
-    rakList.forEach(r => slotPerRak[r] = 15);
+    rakList.forEach(r => slotPerRak[r] = 30);
     return;
   }
   slotPerRak = {};
-  rakList.forEach(r => slotPerRak[r] = 15);
+  rakList.forEach(r => slotPerRak[r] = 30);
   data.forEach(row => slotPerRak[row.rak_id] = row.slot_count);
-  slotCountInput.value = slotPerRak[currentRak] || 15;
+  slotCountInput.value = slotPerRak[currentRak] || 30;
 }
 
 // Load data gudang
@@ -259,7 +259,7 @@ async function loadData() {
 // Render kotak
 function render() {
   grid.innerHTML = "";
-  const totalSlot = slotPerRak[currentRak] || 15;
+  const totalSlot = slotPerRak[currentRak] || 30;
   const query = searchInput.value.trim().toLowerCase();
 
   for (let i = 1; i <= totalSlot; i++) {
