@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sistem Tempat Barang Supabase</title>
-
+<title>Sistem Gudang Multi-Rak Supabase</title>
 <style>
 :root {
   --bg: #f8fafc;
@@ -13,13 +12,15 @@
   --text: #111827;
   --muted: #6b7280;
   --border: #e5e7eb;
+  --alert: #ef4444;
+  --alert-dark: #b91c1c;
 }
 body {
   font-family: 'Inter', system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  padding: 20px;
   margin: 0;
+  padding: 20px;
 }
 h1 {
   font-size: 22px;
@@ -29,57 +30,85 @@ h1 {
 .toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
   margin-bottom: 20px;
 }
-select, input {
+select, input, button {
   padding: 8px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: white;
   font-size: 14px;
 }
-input[type="text"] {
-  min-width: 200px;
+input[type="text"], input[type="number"] {
   flex: 1;
+  min-width: 120px;
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 14px;
-}
-.box {
-  background: white;
-  border: 2px solid var(--border);
-  border-radius: 16px;
-  padding: 15px;
-  text-align: center;
+button {
+  background: var(--accent);
+  color: white;
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.box:hover {
-  border-color: var(--accent);
+button:hover {
+  background: var(--accent-dark);
+}
+#status {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: var(--muted);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.box {
+  border-radius: 16px;
+  padding: 20px 10px;
+  text-align: center;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.box.empty {
+  background: #e5e7eb;
+  color: var(--muted);
+  border: 1px dashed var(--border);
 }
 .box.filled {
   background: var(--accent);
   color: white;
-  border-color: var(--accent-dark);
+  border: 2px solid var(--accent-dark);
+}
+.box.customer {
+  background: var(--alert);
+  color: white;
+  border: 2px solid var(--alert-dark);
 }
 .slot-id {
   font-size: 14px;
   opacity: 0.9;
 }
-.nama-barang {
-  margin-top: 5px;
-  font-size: 15px;
+.customer {
+  font-size: 17px;
   font-weight: 700;
+  margin-top: 8px;
+  text-transform: uppercase;
+  word-break: break-word;
 }
-
+footer {
+  margin-top: 20px;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
 /* Modal */
 .modal {
   display: none;
   position: fixed;
-  z-index: 200;
+  z-index: 100;
   left: 0; top: 0;
   width: 100%; height: 100%;
   background: rgba(0,0,0,0.4);
@@ -89,173 +118,241 @@ input[type="text"] {
   margin: 80px auto;
   padding: 20px;
   border-radius: 12px;
-  max-width: 600px;
+  max-width: 700px;
+  max-height: 80%;
+  overflow-y: auto;
+}
+.modal-header {
+  font-weight: 700;
+  margin-bottom: 10px;
+  font-size: 18px;
 }
 .modal-close {
   float: right;
-  font-weight: bold;
   cursor: pointer;
+  font-weight: 700;
   color: var(--muted);
-  font-size: 18px;
 }
 .modal-close:hover {
-  color: black;
+  color: var(--text);
 }
-.modal-title {
-  font-size: 20px;
-  font-weight: bold;
-  margin-bottom: 12px;
-}
-.detail-table {
+.table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 10px;
 }
-.detail-table td {
-  padding: 8px;
+.table th, .table td {
   border: 1px solid var(--border);
+  padding: 6px;
+  text-align: left;
 }
-.detail-table tr:nth-child(odd) {
+.table th {
   background: #f3f4f6;
 }
 </style>
 </head>
-
 <body>
 
 <h1>📦 Tempat Barang</h1>
 
 <div class="toolbar">
-  <label>Rak:</label>
+  <label for="rakSelect">Rak:</label>
   <select id="rakSelect"></select>
-
-  <input type="text" id="searchInput" placeholder="🔍 Cari nama barang..." />
+  <input type="text" id="searchInput" placeholder="🔍 Cari customer..." />
+  <input type="number" id="slotCountInput" min="1" />
+  <button id="addSlotBtn">➕ Tambah Kotak</button>
+  <button id="saveSlotCountBtn">💾 Simpan</button>
+  <button id="syncBtn">🔄 Sinkronkan Data</button>
 </div>
 
 <div id="status">Status: Menghubungkan ke Supabase...</div>
-
 <div class="grid" id="grid"></div>
 
 <!-- Modal -->
-<div id="modal" class="modal">
+<div class="modal" id="modal">
   <div class="modal-content">
-    <span id="closeModal" class="modal-close">&times;</span>
-    <div class="modal-title" id="modalTitle"></div>
-    <table class="detail-table" id="detailTable"></table>
+    <span class="modal-close" id="modalClose">&times;</span>
+    <div class="modal-header" id="modalTitle">Detail Kotak</div>
+    <table class="table" id="modalTable">
+      <thead>
+        <tr>
+          <th>公司號</th>
+          <th>包裝數量</th>
+          <th>客戶</th>
+          <th>客戶訂單號</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 </div>
+
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
-
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"; // Ganti dengan API Key Anda
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const rakList = "ABCDEFGHIJ".split("");
 const rakSelect = document.getElementById("rakSelect");
 const grid = document.getElementById("grid");
-const searchInput = document.getElementById("searchInput");
 const status = document.getElementById("status");
+const syncBtn = document.getElementById("syncBtn");
+const searchInput = document.getElementById("searchInput");
+const slotCountInput = document.getElementById("slotCountInput");
+const addSlotBtn = document.getElementById("addSlotBtn");
+const saveSlotCountBtn = document.getElementById("saveSlotCountBtn");
 
-// Modal
 const modal = document.getElementById("modal");
-const closeModal = document.getElementById("closeModal");
+const modalClose = document.getElementById("modalClose");
 const modalTitle = document.getElementById("modalTitle");
-const detailTable = document.getElementById("detailTable");
+const modalTableBody = document.querySelector("#modalTable tbody");
 
+const rakList = "ABCDEFGHIJ".split("");
+let slotPerRak = {};
+let currentRak = "A";
+let gudangData = [];
+
+// Dropdown rak
 rakList.forEach(r => {
   const opt = document.createElement("option");
   opt.value = r;
-  opt.textContent = "RAK " + r;
+  opt.textContent = `Rak ${r}`;
   rakSelect.appendChild(opt);
 });
+rakSelect.value = currentRak;
 
-let dataBarang = [];
-let slotPerRak = 30;
+// Helper
+const formatID = (r, n) => r + String(n).padStart(2, "0");
+const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
 
-// Ambil data barang
-async function loadData() {
-  status.textContent = "Mengambil data dari Supabase...";
-
-  const { data, error } = await supabase.from("gudang_penyimpanan").select("*");
-
+// Load konfigurasi rak
+async function loadRakConfig() {
+  const { data, error } = await supabase.from("rak_konfigurasi").select("*");
   if (error) {
-    status.textContent = "❌ Gagal mengambil data";
     console.error(error);
+    rakList.forEach(r => slotPerRak[r] = 30);
     return;
   }
+  slotPerRak = {};
+  rakList.forEach(r => slotPerRak[r] = 30);
+  data.forEach(row => slotPerRak[row.rak_id] = row.slot_count);
+  slotCountInput.value = slotPerRak[currentRak] || 30;
+}
 
-  dataBarang = data;
-  status.textContent = "Terhubung • " + dataBarang.length + " barang";
-  render();
+// Load data gudang
+async function loadData() {
+  status.textContent = "Status: Mengambil data dari Supabase...";
+  try {
+    const { data, error } = await supabase.from("gudang_penyimpanan").select("*");
+    if (error) throw error;
+    gudangData = data || [];
+    status.textContent = ` ${gudangData.length} data ditemukan`;
+    render();
+  } catch (e) {
+    console.error(e);
+    status.textContent = "❌ Gagal mengambil data dari Supabase";
+  }
 }
 
 // Render kotak
 function render() {
   grid.innerHTML = "";
-  const rak = rakSelect.value;
-  const keyword = searchInput.value.toLowerCase();
+  const totalSlot = slotPerRak[currentRak] || 30;
+  const query = searchInput.value.trim().toLowerCase();
 
-  for (let i = 1; i <= slotPerRak; i++) {
-    const slotId = rak + String(i).padStart(2, "0");
-
-    let isiSlot = dataBarang.filter(b => (b.place || "").toUpperCase() === slotId);
+  for (let i = 1; i <= totalSlot; i++) {
+    const id = formatID(currentRak, i);
+    let itemsInSlot = gudangData.filter(d => normalize(d.place) === id);
 
     // Filter pencarian
-    if (keyword) {
-      isiSlot = isiSlot.filter(b => b.nama_barang.toLowerCase().includes(keyword));
-      if (isiSlot.length === 0) continue;
+    if (query) {
+      itemsInSlot = itemsInSlot.filter(it => (it.customer || "").toLowerCase().includes(query));
+      if (itemsInSlot.length === 0) continue;
     }
 
-    const div = document.createElement("div");
-    div.className = isiSlot.length ? "box filled" : "box";
+    const box = document.createElement("div");
+    if (itemsInSlot.some(it => it.customer)) box.className = "box customer";
+    else if (itemsInSlot.length) box.className = "box filled";
+    else box.className = "box empty";
 
-    div.innerHTML = `
-      <div class="slot-id">${slotId}</div>
-      <div class="nama-barang">${isiSlot[0]?.nama_barang || ""}</div>
-    `;
+    const slot = document.createElement("div");
+    slot.className = "slot-id";
+    slot.textContent = id;
 
-    div.addEventListener("click", () => openDetail(slotId, isiSlot));
+    const cust = document.createElement("div");
+    cust.className = "customer";
+    const firstCustomer = itemsInSlot.find(it => it.customer);
+    cust.textContent = firstCustomer ? firstCustomer.customer : "";
 
-    grid.appendChild(div);
+    box.appendChild(slot);
+    box.appendChild(cust);
+
+    box.addEventListener("click", () => {
+      modalTitle.textContent = `Detail Kotak ${id}`;
+      modalTableBody.innerHTML = "";
+      itemsInSlot.forEach(it => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${it.company_number || "-"}</td>
+                        <td>${it.packaging_quantity || "-"}</td>
+                        <td>${it.customer || "-"}</td>
+                        <td>${it.customer_order_number || "-"}</td>`;
+        modalTableBody.appendChild(tr);
+      });
+      modal.style.display = "block";
+    });
+
+    grid.appendChild(box);
   }
+
+  // Update input jumlah slot
+  slotCountInput.value = totalSlot;
 }
 
-// Modal detail
-function openDetail(slotId, items) {
-  modal.style.display = "block";
-  modalTitle.textContent = "Detail Slot " + slotId;
+// Tambah kotak 1 slot
+addSlotBtn.addEventListener("click", async () => {
+  const newSlotNumber = (slotPerRak[currentRak] || 0) + 1;
+  slotPerRak[currentRak] = newSlotNumber;
+  render();
+  await supabase.from("rak_konfigurasi").upsert({ rak_id: currentRak, slot_count: newSlotNumber }, { onConflict: ["rak_id"] });
+  status.textContent = `✅ Slot baru ditambahkan. Total: ${newSlotNumber}`;
+});
 
-  detailTable.innerHTML = "";
-
-  if (items.length === 0) {
-    detailTable.innerHTML = `<tr><td>Tidak ada barang</td></tr>`;
+// Simpan jumlah slot sesuai input
+saveSlotCountBtn.addEventListener("click", async () => {
+  const newSlotCount = parseInt(slotCountInput.value);
+  if (!newSlotCount || newSlotCount < 1) {
+    alert("Jumlah kotak harus lebih dari 0");
     return;
   }
+  slotPerRak[currentRak] = newSlotCount;
+  render();
+  try {
+    const { error } = await supabase.from("rak_konfigurasi").upsert({ rak_id: currentRak, slot_count: newSlotCount }, { onConflict: ["rak_id"] });
+    if (error) throw error;
+    status.textContent = `✅ Jumlah kotak Rak ${currentRak} berhasil diupdate: ${newSlotCount}`;
+  } catch (e) {
+    console.error(e);
+    status.textContent = `❌ Gagal update jumlah kotak: ${e.message}`;
+  }
+});
 
-  const b = items[0];
-
-  detailTable.innerHTML = `
-    <tr><td><b>Nama Barang</b></td><td>${b.nama_barang}</td></tr>
-    <tr><td><b>Barcode</b></td><td>${b.barcode}</td></tr>
-    <tr><td><b>Jumlah</b></td><td>${b.jumlah}</td></tr>
-    <tr><td><b>Kategori</b></td><td>${b.kategori}</td></tr>
-    <tr><td><b>Keterangan</b></td><td>${b.keterangan || "-"}</td></tr>
-    <tr><td><b>Tempat</b></td><td>${b.place}</td></tr>
-  `;
-}
-
-closeModal.onclick = () => modal.style.display = "none";
-window.onclick = e => { if (e.target == modal) modal.style.display = "none"; };
-
+// Event lainnya
+rakSelect.addEventListener("change", () => {
+  currentRak = rakSelect.value;
+  render();
+});
 searchInput.addEventListener("input", render);
-rakSelect.addEventListener("change", render);
+syncBtn.addEventListener("click", loadData);
+modalClose.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
 
 // Init
-loadData();
+(async () => {
+  await loadRakConfig();
+  await loadData();
+})();
 </script>
-
 </body>
 </html>
