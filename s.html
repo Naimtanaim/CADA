@@ -179,7 +179,7 @@ let slotPerRak = 30;
 async function loadData() {
   status.textContent = "Mengambil data dari Supabase...";
 
-  const { data, error } = await supabase.from("barang_gudang").select("*");
+  const { data, error } = await supabase.from("gudang_penyimpanan").select("*");
 
   if (error) {
     status.textContent = "❌ Gagal mengambil data";
