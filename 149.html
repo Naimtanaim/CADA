@@ -57,6 +57,7 @@
     box-sizing: border-box;
     font-size: 20px;
   }
+
   .btn-delete-all {
     position: absolute;
     top:90px;
@@ -90,11 +91,6 @@
   }
   .btn-print-duplicate:hover { transform: translateY(-2px); box-shadow: 0 1px 20px rgba(0,0,0,0.3); }
 
-  label { font-size: 18px; margin-right: 10px; }
-  input[type="number"] { padding: 6px 10px; font-size: 16px; width: 60px; margin-right: 10px; }
-  button.set-btn { padding: 6px 15px; font-size: 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f4f4f4; }
-  button.set-btn:hover { background: #ddd; }
-  .output { margin-top: 10px; font-size: 16px; font-weight: bold; }
   .draggable-box {
     position: absolute;
     top: 10px;
@@ -107,7 +103,6 @@
   }
   .draggable-box:active { cursor: grabbing; }
   .output { margin-top: 8px; font-weight: bold; color: #333; }
-  button { margin-left: 5px; padding: 5px 10px; }
 </style>
 </head>
 <body>
@@ -172,12 +167,16 @@ const weightWarning = document.getElementById("weightWarning");
 
 let palletWeight = 0;
 
-// ✅ Set berat pallet dan update tiap baris
+// ===============================
+//  PERBAIKAN SET WEIGHT (FINAL)
+// ===============================
 window.setWeight = async function() {
   const input = document.getElementById("palletWeight");
   const val = input.value;
+
+  // Jika input kosong → tidak update apa-apa
   if (val === "" || isNaN(val)) {
-    alert("请输入有效的重量!");
+    alert("Berat kosong! Tidak ada data diperbarui.");
     return;
   }
 
@@ -186,41 +185,39 @@ window.setWeight = async function() {
 
   const { data: rows, error: fetchError } = await supabase
     .from('plt_table_duplicate')
-    .select('NO, 重量')
-    .order('NO', { ascending: true }); // ✅ urutkan
+    .select('NO');
 
   if (fetchError) {
-    console.error(fetchError);
-    alert("❌ 获取数据失败: " + fetchError.message);
+    alert("Gagal mengambil data: " + fetchError.message);
     return;
   }
 
-  if (!rows || !rows.length) {
-    alert("没有可更新的记录。");
-    return;
-  }
-
+  // Update setiap baris → berat menjadi nilai baru (tidak ditambah)
   for (const row of rows) {
-    const oldW = parseFloat(row.重量);
-    const newW = (isNaN(oldW) ? 0 : oldW) + palletWeight;
-    await supabase.from('plt_table_duplicate').update({ 重量: newW }).eq('NO', row.NO);
+    await supabase
+      .from('plt_table_duplicate')
+      .update({ 重量: palletWeight })
+      .eq('NO', row.NO);
   }
 
-  alert("✅ 所有行已更新 + " + palletWeight + " kg");
-  input.value = '';
+  alert("✔ Berat pallet berhasil diperbarui ke semua baris!");
+
+  input.value = "";
   loadData();
   calculateTotals();
 };
 
-// ✅ Load data (urut berdasarkan NO)
+// ===============================
+// Load Data
+// ===============================
 async function loadData() {
   tbody.innerHTML = '';
   const { data, error } = await supabase
     .from('plt_table_duplicate')
     .select('*')
-    .order('NO', { ascending: true }); // ✅ Urutkan hasil query
+    .order('NO', { ascending: true });
 
-  if (error) { console.error(error); return; }
+  if (error) return;
 
   data.forEach(row => {
     const tr = document.createElement('tr');
@@ -241,7 +238,9 @@ async function loadData() {
   calculateTotals();
 }
 
-// ✅ Perhitungan total
+// ===============================
+// HITUNG TOTAL
+// ===============================
 function calculateTotals() {
   const rows = document.querySelectorAll("#pltTable tbody tr");
   let totalCbm = 0, totalBox = 0, totalWeight = 0;
@@ -258,37 +257,44 @@ function calculateTotals() {
   weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
 }
 
-// ✅ Tambahkan event hapus
+// ===============================
+// Tombol Delete Per Baris
+// ===============================
 function addDeleteEvents(){
   document.querySelectorAll(".delete-btn").forEach(btn=>{
     btn.onclick = async function(){
       const tr = this.closest("tr");
       const no = tr.cells[0].innerText;
-      const { data, error } = await supabase.from('plt_table_duplicate').select('*').eq('NO', no).single();
-      if (error) return alert("Gagal ambil data!");
 
+      const { data } = await supabase.from('plt_table_duplicate').select('*').eq('NO', no).single();
       await supabase.from('plt_table').insert([data]);
       await supabase.from('plt_table_duplicate').delete().eq('NO', no);
 
       tr.remove();
       calculateTotals();
-      alert(`✅ Data PLT ${no} telah dikembalikan ke tabel asli!`);
+      alert(`✔ Data PLT ${no} telah dikembalikan!`);
     }
   });
 }
 
-// ✅ Tombol hapus semua
+// ===============================
+// Delete Semua
+// ===============================
 document.querySelector('.btn-delete-all').addEventListener('click', async () => {
-  if (!confirm("⚠️ Yakin hapus semua data duplicate dan kembalikan ke tabel asli?")) return;
+  if (!confirm("Yakin hapus semua duplicate & kembalikan?")) return;
+
   const { data } = await supabase.from('plt_table_duplicate').select('*');
   if (data.length > 0) await supabase.from('plt_table').insert(data);
   await supabase.from('plt_table_duplicate').delete().neq('NO', 0);
-  alert("✅ Semua data telah dikembalikan!");
+
   tbody.innerHTML = '';
   calculateTotals();
+  alert("✔ Semua data dikembalikan!");
 });
 
-// ✅ Tombol Duplicate
+// ===============================
+// Duplicate PLT
+// ===============================
 document.getElementById("duplicateBtn").onclick = async function() {
   const startEl = document.getElementById("startNo");
   const endEl = document.getElementById("endNo");
@@ -303,14 +309,13 @@ document.getElementById("duplicateBtn").onclick = async function() {
     return;
   }
 
-  const { data, error } = await supabase.from('plt_table')
+  const { data } = await supabase.from('plt_table')
     .select('*')
     .gte('NO', startNo)
     .lte('NO', endNo)
-    .order('NO', { ascending: true }); // ✅ urutkan
+    .order('NO', { ascending: true });
 
-  if (error) return alert("Gagal ambil data");
-  if (!data.length) return alert("Data tidak ditemukan");
+  if (!data.length) return alert("Data tidak ditemukan!");
 
   await supabase.from('plt_table_duplicate').insert(data);
   await supabase.from('plt_table').delete().gte('NO', startNo).lte('NO', endNo);
@@ -318,7 +323,7 @@ document.getElementById("duplicateBtn").onclick = async function() {
   loadData();
 };
 
-// ✅ Load awal
+// Load awal
 loadData();
 </script>
 </body>
