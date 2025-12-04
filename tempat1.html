@@ -150,11 +150,11 @@ async function loadRakConfig() {
   const { data, error } = await supabase.from("rak_konfigurasi").select("*");
   if (error) {
     console.error("Gagal memuat konfigurasi rak:", error);
-    rakList.forEach(r => slotPerRak[r] = 15);
+    rakList.forEach(r => slotPerRak[r] = 200);
     return;
   }
   slotPerRak = {};
-  rakList.forEach(r => slotPerRak[r] = 15);
+  rakList.forEach(r => slotPerRak[r] = 200);
   data.forEach(row => slotPerRak[row.rak_id] = row.slot_count);
 }
 
@@ -176,7 +176,7 @@ async function loadData() {
 // Render kotak
 function render() {
   grid.innerHTML = "";
-  const totalSlot = slotPerRak[currentRak] || 15;
+  const totalSlot = slotPerRak[currentRak] || 200;
 
   for (let i = 1; i <= totalSlot; i++) {
     const id = formatID(currentRak, i);
