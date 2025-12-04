@@ -226,11 +226,11 @@ async function loadRakConfig() {
   if (error || !data.length) {
     // buat rak default jika database kosong
     rakList = ["A"];
-    slotPerRak["A"] = 30;
+    slotPerRak["A"] = 200;
 
     await supabase.from("rak_konfigurasi").insert({
       rak_id: "A",
-      slot_count: 30
+      slot_count: 200
     });
   } else {
     data.forEach(row => {
@@ -274,7 +274,7 @@ async function loadData() {
 function render() {
   grid.innerHTML = "";
 
-  const totalSlot = slotPerRak[currentRak] || 30;
+  const totalSlot = slotPerRak[currentRak] || 200;
   const query = searchInput.value.trim().toLowerCase();
 
   for (let i = 1; i <= totalSlot; i++) {
