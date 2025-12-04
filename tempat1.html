@@ -173,37 +173,69 @@ async function loadData() {
   }
 }
 
-// Render kotak
 function render() {
   grid.innerHTML = "";
   const totalSlot = slotPerRak[currentRak] || 200;
 
-  for (let i = 1; i <= totalSlot; i++) {
-    const id = formatID(currentRak, i);
-    const item = gudangData.find(d => normalize(d.place) === id);
+  // Buat map: SLOT → DATA
+  const mapPerSlot = {};
+  gudangData.forEach(row => {
+    const norm = normalizePlace(row.place);
+    if (norm) mapPerSlot[norm] = row;
+  });
 
+  for (let i = 1; i <= totalSlot; i++) {
+    const slotID = formatID(currentRak, i);
+    const item = mapPerSlot[slotID];
+
+    // --- kotak ---
     const box = document.createElement("div");
+
     if (item && item.customer) {
-      box.className = "box customer"; // merah jika ada customer
-    } else if (item && item.packaging_board) {
-      box.className = "box filled"; 
-    } else {
-      box.className = "box empty"; 
+      box.className = "box customer"; // merah bila ada customer
+    } 
+    else if (item) {
+      box.className = "box filled"; // merah biasa
+    } 
+    else {
+      box.className = "box empty"; // kosong
     }
 
+    // --- label id slot ---
     const slot = document.createElement("div");
     slot.className = "slot-id";
-    slot.textContent = id;
+    slot.textContent = slotID;
 
+    // --- nama yang ditampilkan ---
     const cust = document.createElement("div");
     cust.className = "customer";
-    cust.textContent = item ? (item.customer || "") : "";
+    cust.textContent =
+      item ? 
+        (item.customer || item.box_number || item.material_order_number || item.barcode || "") 
+        : "";
 
+    // gabung
     box.appendChild(slot);
     box.appendChild(cust);
+
+    // klik → detail
+    box.addEventListener("click", () => {
+      if (!item) {
+        alert(`Slot ${slotID}\n\nKOSONG`);
+        return;
+      }
+      alert(
+        `DETAIL SLOT ${slotID}\n\n` +
+        Object.entries(item)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\n")
+      );
+    });
+
     grid.appendChild(box);
   }
 }
+
 
 // Event
 rakSelect.addEventListener("change", () => {
