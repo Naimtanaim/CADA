@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sistem Gudang Multi-Rak Supabase</title>
+<title>Sistem Gudang Multi-Rak Supabase (Fixed)</title>
 <style>
 :root {
   --bg: #f8fafc;
@@ -149,7 +149,7 @@ button:hover {
 </head>
 <body>
 
-<h1>📦 Tempat Barang </h1>
+<h1>📦 Tempat Barang</h1>
 
 <div class="toolbar">
   <label for="rakSelect">Rak:</label>
@@ -185,12 +185,11 @@ button:hover {
   </div>
 </div>
 
-
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";  // ganti dengan key Anda
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const rakSelect = document.getElementById("rakSelect");
@@ -212,19 +211,29 @@ let rakList = [];
 let currentRak = "";
 let gudangData = [];
 
-const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
-const formatID = (r, n) => r + String(n).padStart(2, "0");
+// Normalisasi otomatis agar A1, A01, A001 → A01
+function normalizePlace(p) {
+  if (!p) return "";
+  let t = p.toString().trim().toUpperCase().replace(/\s+/g, "");
+  t = t.replace(/^A0+/, "A"); // buang nol berlebih
+  if (/^A\d$/.test(t)) {
+    const num = t.substring(1);
+    return "A" + num.padStart(2, "0");
+  }
+  return t;
+}
 
-// Load rak otomatis dari database
+const formatID = (rak, no) => rak + String(no).padStart(2, "0");
+
+// Ambil rak & slot
 async function loadRakConfig() {
-  const { data, error } = await supabase.from("rak_konfigurasi").select("*");
+  const { data } = await supabase.from("rak_konfigurasi").select("*");
 
   rakSelect.innerHTML = "";
   slotPerRak = {};
   rakList = [];
 
-  if (error || !data.length) {
-    // buat rak default jika database kosong
+  if (!data || !data.length) {
     rakList = ["A"];
     slotPerRak["A"] = 200;
 
@@ -239,7 +248,6 @@ async function loadRakConfig() {
     });
   }
 
-  // Isi dropdown
   rakList.forEach(r => {
     const o = document.createElement("option");
     o.value = r;
@@ -249,11 +257,10 @@ async function loadRakConfig() {
 
   currentRak = rakList[0];
   rakSelect.value = currentRak;
-
   slotCountInput.value = slotPerRak[currentRak];
 }
 
-// Load data gudang
+// Ambil semua data
 async function loadData() {
   status.textContent = "Status: Mengambil data...";
 
@@ -264,26 +271,30 @@ async function loadData() {
     return;
   }
 
-  gudangData = data;
-  status.textContent = `${data.length} data ditemukan`;
+  // NORMALISASI PLACE AGAR SEMUA SLOT BISA MUNCUL
+  gudangData = data.map(item => ({
+    ...item,
+    place: normalizePlace(item.place)
+  }));
 
+  status.textContent = `${data.length} data ditemukan`;
   render();
 }
 
-// Render grid slot
+// Render kotak slot
 function render() {
   grid.innerHTML = "";
-
   const totalSlot = slotPerRak[currentRak] || 200;
-  const query = searchInput.value.trim().toLowerCase();
+  const search = searchInput.value.trim().toLowerCase();
 
   for (let i = 1; i <= totalSlot; i++) {
     const id = formatID(currentRak, i);
-    let items = gudangData.filter(d => normalize(d.place) === id);
 
-    if (query) {
+    let items = gudangData.filter(d => d.place === id);
+
+    if (search) {
       items = items.filter(d =>
-        (d.customer || "").toLowerCase().includes(query)
+        (d.customer || "").toLowerCase().includes(search)
       );
       if (items.length === 0) continue;
     }
@@ -322,15 +333,13 @@ function render() {
   slotCountInput.value = totalSlot;
 }
 
-// Event tombol
+// Tombol
 addSlotBtn.onclick = async () => {
   slotPerRak[currentRak] += 1;
-
   await supabase.from("rak_konfigurasi").upsert({
     rak_id: currentRak,
     slot_count: slotPerRak[currentRak]
   });
-
   render();
   status.textContent = "Slot berhasil ditambah";
 };
@@ -340,7 +349,6 @@ saveSlotCountBtn.onclick = async () => {
   if (!v || v < 1) return alert("Jumlah tidak valid");
 
   slotPerRak[currentRak] = v;
-
   await supabase.from("rak_konfigurasi").upsert({
     rak_id: currentRak,
     slot_count: v
@@ -354,6 +362,7 @@ rakSelect.onchange = () => {
   currentRak = rakSelect.value;
   render();
 };
+
 searchInput.oninput = render;
 syncBtn.onclick = loadData;
 
