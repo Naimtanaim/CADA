@@ -142,7 +142,7 @@ rakList.forEach(r => {
 rakSelect.value = currentRak;
 
 // Helper
-const formatID = (r, n) => r + String(n).padStart(2, "0");
+const formatID = (r, n) => r + String(n).padStart(4, "0");
 const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
 
 // Load konfigurasi rak dari Supabase
