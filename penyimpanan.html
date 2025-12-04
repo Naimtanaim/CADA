@@ -432,8 +432,6 @@ barcodeInput.addEventListener('change', async () => {
   lastCustomer = rows[0].customer || lastCustomer;
   updateTotalCount();
 
-  showPopup(`✅ Barcode ${barcode} berhasil disimpan.`, 'success');
-
   barcodeInput.value = '';
   barcodeInput.focus();
 });
