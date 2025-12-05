@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sistem Gudang Multi-Rak Supabase</title>
+
 <style>
 :root {
   --bg: #f8fafc;
@@ -149,7 +150,7 @@ button:hover {
 </head>
 <body>
 
-<h1>📦 Tempat Barang </h1>
+<h1>📦 Tempat Barang</h1>
 
 <div class="toolbar">
   <label for="rakSelect">Rak:</label>
@@ -165,6 +166,7 @@ button:hover {
 
 <div id="status">Status: Menghubungkan ke Supabase...</div>
 <div class="grid" id="grid"></div>
+
 
 <!-- Modal -->
 <div class="modal" id="modal">
@@ -190,7 +192,7 @@ button:hover {
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";  // ganti dengan key Anda
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const rakSelect = document.getElementById("rakSelect");
@@ -215,7 +217,8 @@ let gudangData = [];
 const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
 const formatID = (r, n) => r + String(n).padStart(2, "0");
 
-// Load rak otomatis dari database
+
+// 🔥 FIX: Buat rak A–J default 100 slot bila kosong
 async function loadRakConfig() {
   const { data, error } = await supabase.from("rak_konfigurasi").select("*");
 
@@ -224,14 +227,16 @@ async function loadRakConfig() {
   rakList = [];
 
   if (error || !data.length) {
-    // buat rak default jika database kosong
-    rakList = ["A"];
-    slotPerRak["A"] = 30;
+    const letters = "ABCDEFGHIJ".split("");
+    const defaults = [];
 
-    await supabase.from("rak_konfigurasi").insert({
-      rak_id: "A",
-      slot_count: 30
+    letters.forEach(r => {
+      rakList.push(r);
+      slotPerRak[r] = 100;  // bebas mau dinaikkan 200 / 300
+      defaults.push({ rak_id: r, slot_count: 100 });
     });
+
+    await supabase.from("rak_konfigurasi").insert(defaults);
   } else {
     data.forEach(row => {
       rakList.push(row.rak_id);
@@ -239,21 +244,20 @@ async function loadRakConfig() {
     });
   }
 
-  // Isi dropdown
   rakList.forEach(r => {
-    const o = document.createElement("option");
-    o.value = r;
-    o.textContent = "Rak " + r;
-    rakSelect.appendChild(o);
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = "Rak " + r;
+    rakSelect.appendChild(opt);
   });
 
   currentRak = rakList[0];
   rakSelect.value = currentRak;
-
   slotCountInput.value = slotPerRak[currentRak];
 }
 
-// Load data gudang
+
+// Ambil data gudang
 async function loadData() {
   status.textContent = "Status: Mengambil data...";
 
@@ -270,26 +274,27 @@ async function loadData() {
   render();
 }
 
-// Render grid slot
+
+// 🔥 FIX: Render semua slot sesuai slot_count tanpa ada batas tersembunyi
 function render() {
   grid.innerHTML = "";
 
-  const totalSlot = slotPerRak[currentRak] || 30;
-  const query = searchInput.value.trim().toLowerCase();
+  const totalSlot = Number(slotPerRak[currentRak]) || 100;
+  const search = searchInput.value.trim().toLowerCase();
 
   for (let i = 1; i <= totalSlot; i++) {
     const id = formatID(currentRak, i);
+
     let items = gudangData.filter(d => normalize(d.place) === id);
 
-    if (query) {
+    if (search) {
       items = items.filter(d =>
-        (d.customer || "").toLowerCase().includes(query)
+        (d.customer || "").toLowerCase().includes(search)
       );
       if (items.length === 0) continue;
     }
 
     const box = document.createElement("div");
-
     if (items.some(d => d.customer)) box.className = "box customer";
     else if (items.length) box.className = "box filled";
     else box.className = "box empty";
@@ -322,9 +327,10 @@ function render() {
   slotCountInput.value = totalSlot;
 }
 
-// Event tombol
+
+// Tombol tambah slot
 addSlotBtn.onclick = async () => {
-  slotPerRak[currentRak] += 1;
+  slotPerRak[currentRak]++;
 
   await supabase.from("rak_konfigurasi").upsert({
     rak_id: currentRak,
@@ -335,31 +341,37 @@ addSlotBtn.onclick = async () => {
   status.textContent = "Slot berhasil ditambah";
 };
 
-saveSlotCountBtn.onclick = async () => {
-  const v = parseInt(slotCountInput.value);
-  if (!v || v < 1) return alert("Jumlah tidak valid");
 
-  slotPerRak[currentRak] = v;
+// Tombol simpan jumlah slot
+saveSlotCountBtn.onclick = async () => {
+  const val = Number(slotCountInput.value);
+  if (!val || val < 1) return alert("Jumlah tidak valid");
+
+  slotPerRak[currentRak] = val;
 
   await supabase.from("rak_konfigurasi").upsert({
     rak_id: currentRak,
-    slot_count: v
+    slot_count: val
   });
 
   status.textContent = "Jumlah slot diperbarui";
   render();
 };
 
+
+// Event
 rakSelect.onchange = () => {
   currentRak = rakSelect.value;
   render();
 };
+
 searchInput.oninput = render;
 syncBtn.onclick = loadData;
 
 // Modal
-modalClose.onclick = () => (modal.style.display = "none");
+modalClose.onclick = () => modal.style.display = "none";
 window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
 
 // Init
 (async () => {
