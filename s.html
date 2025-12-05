@@ -3,369 +3,226 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Sistem Gudang Multi-Rak Supabase</title>
+<title>Penyimpanan Barang Modern – Supabase</title>
+
 <style>
 :root {
-  --bg: #f8fafc;
-  --accent: #10b981;
-  --accent-dark: #059669;
-  --text: #111827;
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --accent: #2563eb;
+  --accent-soft: #dbeafe;
+  --text: #1f2937;
   --muted: #6b7280;
   --border: #e5e7eb;
-  --alert: #ef4444;
-  --alert-dark: #b91c1c;
+  --success: #10b981;
+  --danger: #ef4444;
 }
+
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', sans-serif;
   background: var(--bg);
-  color: var(--text);
   margin: 0;
   padding: 20px;
 }
+
 h1 {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
-  margin-bottom: 14px;
+  margin-bottom: 20px;
 }
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 10px;
   margin-bottom: 20px;
 }
-select, input, button {
-  padding: 8px 12px;
-  border-radius: 10px;
+
+input, select {
+  padding: 10px 14px;
+  font-size: 15px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: white;
-  font-size: 14px;
-}
-input[type="text"], input[type="number"] {
-  flex: 1;
-  min-width: 120px;
-}
-button {
-  background: var(--accent);
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-button:hover {
-  background: var(--accent-dark);
-}
-#status {
-  font-size: 14px;
-  margin-bottom: 10px;
-  color: var(--muted);
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
 }
-.box {
-  border-radius: 16px;
-  padding: 20px 10px;
-  text-align: center;
-  font-weight: 600;
-  transition: all 0.2s ease;
+
+.slot-card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 18px;
+  min-height: 120px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  border: 2px solid transparent;
+  transition: 0.2s;
   cursor: pointer;
 }
-.box.empty {
-  background: #e5e7eb;
-  color: var(--muted);
-  border: 1px dashed var(--border);
+
+.slot-card.empty {
+  border-color: var(--border);
 }
-.box.filled {
-  background: var(--accent);
-  color: white;
-  border: 2px solid var(--accent-dark);
+
+.slot-card.filled {
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
-.box.customer {
-  background: var(--alert);
-  color: white;
-  border: 2px solid var(--alert-dark);
-}
+
 .slot-id {
-  font-size: 14px;
-  opacity: 0.9;
-}
-.customer {
-  font-size: 17px;
   font-weight: 700;
-  margin-top: 8px;
-  text-transform: uppercase;
-  word-break: break-word;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.item-name {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
 }
 
 /* Modal */
 .modal {
-  display: none;
   position: fixed;
-  z-index: 100;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
+  inset: 0;
   background: rgba(0,0,0,0.4);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
 }
+
 .modal-content {
   background: white;
-  margin: 80px auto;
   padding: 20px;
-  border-radius: 12px;
-  max-width: 700px;
-  max-height: 80%;
-  overflow-y: auto;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 16px;
 }
-.modal-header {
-  font-weight: 700;
-  margin-bottom: 10px;
-  font-size: 18px;
-}
+
 .modal-close {
   float: right;
+  font-weight: bold;
   cursor: pointer;
-  font-weight: 700;
   color: var(--muted);
 }
+
 .modal-close:hover {
   color: var(--text);
 }
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-.table th, .table td {
-  border: 1px solid var(--border);
-  padding: 6px;
-  text-align: left;
-}
-.table th {
-  background: #f3f4f6;
-}
+
 </style>
 </head>
 <body>
 
-<h1>📦 Tempat Barang </h1>
+<h1>📦 Penyimpanan Barang – Modern</h1>
 
 <div class="toolbar">
-  <label for="rakSelect">Rak:</label>
-  <select id="rakSelect"></select>
-
-  <input type="text" id="searchInput" placeholder="🔍 Cari customer..." />
-  <input type="number" id="slotCountInput" min="1" />
-
-  <button id="addSlotBtn">➕ Tambah Kotak</button>
-  <button id="saveSlotCountBtn">💾 Simpan</button>
-  <button id="syncBtn">🔄 Sinkronkan Data</button>
+  <select id="rackSelect"></select>
+  <input type="text" id="searchInput" placeholder="🔍 Cari nama barang..." />
 </div>
 
-<div id="status">Status: Menghubungkan ke Supabase...</div>
-<div class="grid" id="grid"></div>
+<div id="status">Mengambil data...</div>
+<div id="grid" class="grid"></div>
 
 <!-- Modal -->
 <div class="modal" id="modal">
   <div class="modal-content">
     <span class="modal-close" id="modalClose">&times;</span>
-    <div class="modal-header" id="modalTitle">Detail Kotak</div>
-    <table class="table" id="modalTable">
-      <thead>
-        <tr>
-          <th>公司號</th>
-          <th>包裝數量</th>
-          <th>客戶</th>
-          <th>客戶訂單號</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <h3 id="modalTitle"></h3>
+    <p id="modalInfo"></p>
   </div>
 </div>
-
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
-const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";  // ganti dengan key Anda
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(
+  "https://uusljhegkvahcjkaxqkz.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"
+);
 
-const rakSelect = document.getElementById("rakSelect");
 const grid = document.getElementById("grid");
 const status = document.getElementById("status");
-const syncBtn = document.getElementById("syncBtn");
+const rackSelect = document.getElementById("rackSelect");
 const searchInput = document.getElementById("searchInput");
-const slotCountInput = document.getElementById("slotCountInput");
-const addSlotBtn = document.getElementById("addSlotBtn");
-const saveSlotCountBtn = document.getElementById("saveSlotCountBtn");
 
 const modal = document.getElementById("modal");
 const modalClose = document.getElementById("modalClose");
 const modalTitle = document.getElementById("modalTitle");
-const modalTableBody = document.querySelector("#modalTable tbody");
+const modalInfo = document.getElementById("modalInfo");
 
-let slotPerRak = {};
-let rakList = [];
-let currentRak = "";
-let gudangData = [];
+let items = [];
+let rackList = [];
 
-const normalize = p => (p ? p.toString().toUpperCase().trim().replace(/\s+/g, "") : "");
-const formatID = (r, n) => r + String(n).padStart(2, "0");
+function render() {
+  grid.innerHTML = "";
+  const query = searchInput.value.toLowerCase();
+  const rak = rackSelect.value;
 
-// Load rak otomatis dari database
-async function loadRakConfig() {
-  const { data, error } = await supabase.from("rak_konfigurasi").select("*");
+  const filtered = items.filter(x =>
+    (x.item_name || "").toLowerCase().includes(query) &&
+    (rak === "ALL" || x.rack === rak)
+  );
 
-  rakSelect.innerHTML = "";
-  slotPerRak = {};
-  rakList = [];
+  filtered.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "slot-card " + (item.item_name ? "filled" : "empty");
 
-  if (error || !data.length) {
-    // buat rak default jika database kosong
-    rakList = ["A"];
-    slotPerRak["A"] = 30;
+    card.innerHTML = `
+      <div class="slot-id">${item.slot}</div>
+      <div class="item-name">${item.item_name ? item.item_name : "-"}</div>
+    `;
 
-    await supabase.from("rak_konfigurasi").insert({
-      rak_id: "A",
-      slot_count: 30
-    });
-  } else {
-    data.forEach(row => {
-      rakList.push(row.rak_id);
-      slotPerRak[row.rak_id] = row.slot_count;
-    });
-  }
+    card.onclick = () => {
+      modalTitle.textContent = item.item_name || "Slot Kosong";
+      modalInfo.innerHTML = `
+        <b>Slot:</b> ${item.slot}<br>
+        <b>Rak:</b> ${item.rack}<br>
+        <b>Diperbarui:</b> ${item.updated_at}
+      `;
+      modal.style.display = "flex";
+    };
 
-  // Isi dropdown
-  rakList.forEach(r => {
-    const o = document.createElement("option");
-    o.value = r;
-    o.textContent = "Rak " + r;
-    rakSelect.appendChild(o);
+    grid.appendChild(card);
   });
 
-  currentRak = rakList[0];
-  rakSelect.value = currentRak;
-
-  slotCountInput.value = slotPerRak[currentRak];
+  status.textContent = filtered.length + " slot ditampilkan";
 }
 
-// Load data gudang
-async function loadData() {
-  status.textContent = "Status: Mengambil data...";
+modalClose.onclick = () => modal.style.display = "none";
+window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
 
-  const { data, error } = await supabase.from("gudang_penyimpanan").select("*");
+async function loadData() {
+  status.textContent = "Mengambil data dari Supabase...";
+
+  const { data, error } = await supabase.from("warehouse_items").select("*");
 
   if (error) {
     status.textContent = "❌ Gagal mengambil data";
     return;
   }
 
-  gudangData = data;
-  status.textContent = `${data.length} data ditemukan`;
+  items = data;
+
+  // Buat daftar rak
+  rackList = [...new Set(data.map(x => x.rack))];
+  rackSelect.innerHTML = `<option value="ALL">Semua Rak</option>`;
+  rackList.forEach(r => {
+    rackSelect.innerHTML += `<option value="${r}">Rak ${r}</option>`;
+  });
 
   render();
 }
 
-// Render grid slot
-function render() {
-  grid.innerHTML = "";
-
-  const totalSlot = slotPerRak[currentRak] || 30;
-  const query = searchInput.value.trim().toLowerCase();
-
-  for (let i = 1; i <= totalSlot; i++) {
-    const id = formatID(currentRak, i);
-    let items = gudangData.filter(d => normalize(d.place) === id);
-
-    if (query) {
-      items = items.filter(d =>
-        (d.customer || "").toLowerCase().includes(query)
-      );
-      if (items.length === 0) continue;
-    }
-
-    const box = document.createElement("div");
-
-    if (items.some(d => d.customer)) box.className = "box customer";
-    else if (items.length) box.className = "box filled";
-    else box.className = "box empty";
-
-    box.innerHTML = `
-      <div class="slot-id">${id}</div>
-      <div class="customer">${items.length ? (items[0].customer || "") : ""}</div>
-    `;
-
-    box.onclick = () => {
-      modalTitle.textContent = "Detail Kotak " + id;
-      modalTableBody.innerHTML = "";
-
-      items.forEach(it => {
-        modalTableBody.innerHTML += `
-          <tr>
-            <td>${it.company_number || "-"}</td>
-            <td>${it.packaging_quantity || "-"}</td>
-            <td>${it.customer || "-"}</td>
-            <td>${it.customer_order_number || "-"}</td>
-          </tr>`;
-      });
-
-      modal.style.display = "block";
-    };
-
-    grid.appendChild(box);
-  }
-
-  slotCountInput.value = totalSlot;
-}
-
-// Event tombol
-addSlotBtn.onclick = async () => {
-  slotPerRak[currentRak] += 1;
-
-  await supabase.from("rak_konfigurasi").upsert({
-    rak_id: currentRak,
-    slot_count: slotPerRak[currentRak]
-  });
-
-  render();
-  status.textContent = "Slot berhasil ditambah";
-};
-
-saveSlotCountBtn.onclick = async () => {
-  const v = parseInt(slotCountInput.value);
-  if (!v || v < 1) return alert("Jumlah tidak valid");
-
-  slotPerRak[currentRak] = v;
-
-  await supabase.from("rak_konfigurasi").upsert({
-    rak_id: currentRak,
-    slot_count: v
-  });
-
-  status.textContent = "Jumlah slot diperbarui";
-  render();
-};
-
-rakSelect.onchange = () => {
-  currentRak = rakSelect.value;
-  render();
-};
+rackSelect.onchange = render;
 searchInput.oninput = render;
-syncBtn.onclick = loadData;
 
-// Modal
-modalClose.onclick = () => (modal.style.display = "none");
-window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
-
-// Init
-(async () => {
-  await loadRakConfig();
-  await loadData();
-})();
+loadData();
 </script>
 
 </body>
