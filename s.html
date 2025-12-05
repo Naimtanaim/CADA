@@ -88,7 +88,17 @@ let gudangData = [];
 let rakConfig = [];
 let selectedSlot = "";
 
-const normalize = p => p ? p.toString().toUpperCase().trim().replace(/[^A-Z0-9]/g,"") : "";
+const normalize = p => {
+    if (!p) return "";
+    return p
+        .toString()
+        .toUpperCase()
+        .normalize("NFKC")              // ubah full-width ke ASCII
+        .replace(/[\u200B-\u200F\uFEFF]/g, "") // hapus ZERO WIDTH
+        .replace(/[\s\u3000]+/g, "")    // hapus spasi biasa + spasi Jepang
+        .replace(/[^A-Z0-9]/g, "");      // hapus semua yang bukan A-Z0-9
+};
+
 
 // =====================
 // LOAD DATA AWAL
@@ -107,7 +117,7 @@ async function loadData() {
     select.innerHTML = `<option value="">— Pilih Rak —</option>`;
     
     racks.forEach(r => {
-        select.innerHTML += `<option value="${r.rak_id}">${r.rak_id} (${r.slot_count} slot)</option>`;
+        select.innerHTML += `<option value="${r.rak_id}">${r.rak_id} </option>`;
     });
 
     // LOAD DATA GUDANG
