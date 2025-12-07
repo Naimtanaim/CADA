@@ -11,7 +11,7 @@ body { margin:0; padding:0; background:#121212; color:#fff; font-family:'Segoe U
 .container { width:95%; max-width:1200px; padding:30px; }
 h1 { text-align:center; margin-bottom:20px; color:#00e0ff; }
 select { padding:10px; font-size:16px; margin-bottom:20px; width:230px; border-radius:5px; border:none; }
-.grid { display:grid; grid-template-columns:repeat(10,1fr); gap:10px; }
+.grid { display:grid; grid-template-columns:repeat(8,1fr); gap:10px; }
 
 .cell { 
     min-height:70px; border-radius:8px; display:flex; justify-content:center; 
@@ -20,7 +20,6 @@ select { padding:10px; font-size:16px; margin-bottom:20px; width:230px; border-r
 }
 .cell:hover { background:#2a2a2a; transform:scale(1.05); }
 
-/* Warna jika ada isi */
 .cell.filled { 
     background:#ffcc00 !important; 
     color:#000 !important; 
@@ -50,7 +49,7 @@ th { background:#e4e4e4; }
 
     <label>Pilih Rak:</label><br>
     <select id="selectRack" onchange="renderGrid()">
-        <option value="">— Pilih rak… —</option>
+        <option value="">— Pilih Rak —</option>
     </select>
 
     <div id="rack-container"></div>
@@ -81,59 +80,50 @@ th { background:#e4e4e4; }
 
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"; 
+
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// DATA GLOBAL
+// GLOBAL DATA
 let gudangData = [];
-let rakConfig = [];
 let selectedSlot = "";
 
+// ==============================
+// NORMALIZE PLACE
+// ==============================
 const normalize = p => {
     if (!p) return "";
-    return p
-        .toString()
-        .toUpperCase()
-        .normalize("NFKC")              // ubah full-width ke ASCII
-        .replace(/[\u200B-\u200F\uFEFF]/g, "") // hapus ZERO WIDTH
-        .replace(/[\s\u3000]+/g, "")    // hapus spasi biasa + spasi Jepang
-        .replace(/[^A-Z0-9]/g, "");      // hapus semua yang bukan A-Z0-9
+    // hapus semua spasi, tab, newline, carriage return
+    return p.toString().replace(/[\s\r\n\t]/g,"").toUpperCase();
 };
 
-
-// =====================
-// LOAD DATA AWAL
-// =====================
+// ==============================
+// LOAD DATA
+// ==============================
 async function loadData() {
     document.getElementById("status").textContent = "Fetching data…";
 
-    // LOAD RAK
-    let { data: racks, error: err1 } = await db.from("rak_konfigurasi").select("*").order("rak_id");
-
-    if (err1) return alert("Error rak_konfigurasi: " + err1.message);
-    rakConfig = racks;
-
-    // MUAT PILIHAN RAK DINAMIS
-    let select = document.getElementById("selectRack");
-    select.innerHTML = `<option value="">— Pilih Rak —</option>`;
-    
-    racks.forEach(r => {
-        select.innerHTML += `<option value="${r.rak_id}">${r.rak_id} </option>`;
-    });
-
-    // LOAD DATA GUDANG
     let { data, error } = await db.from("gudang_penyimpanan").select("*");
-
     if (error) return alert("Supabase Error: " + error.message);
 
-    gudangData = data || [];
-    document.getElementById("status").textContent = `✔ ${gudangData.length} items loaded`;
+    // debug: tampilkan semua place yang diambil
+    console.log("Loaded places:", data.map(d => `"${d.place}"`));
 
+    gudangData = data || [];
+
+    let select = document.getElementById("selectRack");
+    select.innerHTML = `<option value="">— Pilih Rak —</option>`;
+    for (let c = 65; c <= 74; c++) {  // A-J
+        let rackID = String.fromCharCode(c);
+        select.innerHTML += `<option value="${rackID}">${rackID}</option>`;
+    }
+
+    document.getElementById("status").textContent = `✔ ${gudangData.length} items loaded`;
     renderGrid();
 }
 
-// =====================
-// RENDER GRID DINAMIS
-// =====================
+// ==============================
+// RENDER GRID PER RAK
+// ==============================
 function renderGrid() {
     const rack = document.getElementById("selectRack").value;
     const container = document.getElementById("rack-container");
@@ -143,14 +133,12 @@ function renderGrid() {
         return;
     }
 
-    // CARI SLOT_COUNT
-    let cfg = rakConfig.find(r => r.rak_id === rack);
-    let totalSlot = cfg ? cfg.slot_count : 30;
-
+    let totalSlot = 30; // setiap rak 30 slot (A01–A30)
     let html = `<h2>Rak ${rack}</h2><div class="grid">`;
 
     for (let i = 1; i <= totalSlot; i++) {
         let id = rack + String(i).padStart(2, "0");
+
         let items = gudangData.filter(d => normalize(d.place) === id);
 
         let className = "cell";
@@ -170,9 +158,9 @@ function renderGrid() {
     container.innerHTML = html;
 }
 
-// =====================
+// ==============================
 // MODAL DETAIL
-// =====================
+// ==============================
 function openDetail(id) {
     selectedSlot = id;
     const modal = document.getElementById("detailModal");
@@ -200,9 +188,9 @@ function openDetail(id) {
     modal.style.display = "block";
 }
 
-// =====================
+// ==============================
 // DELETE ITEM
-// =====================
+// ==============================
 async function deleteItem(id) {
     if (!confirm("Delete this item?")) return;
     await db.from("gudang_penyimpanan").delete().eq("id", id);
@@ -210,16 +198,15 @@ async function deleteItem(id) {
     loadData();
 }
 
-// MOVE SLOT
+// ==============================
+// MOVE ITEM
+// ==============================
 async function moveItem(id) {
-    let newSlot = prompt("Enter new slot (A01, B15, etc):", selectedSlot);
+    let newSlot = prompt("Enter new slot (A01, J15, etc):", selectedSlot);
     if (!newSlot) return;
-
     newSlot = normalize(newSlot);
 
-    await db.from("gudang_penyimpanan")
-        .update({ place: newSlot })
-        .eq("id", id);
+    await db.from("gudang_penyimpanan").update({ place: newSlot }).eq("id", id);
 
     closeModal();
     loadData();
@@ -236,6 +223,7 @@ window.onclick = e => {
 };
 
 loadData();
+
 </script>
 </body>
 </html>
