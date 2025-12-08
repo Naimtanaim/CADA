@@ -82,53 +82,56 @@ th { background:#e4e4e4; }
 
 <script>
 
+// =========================
+// SUPABASE CLIENT
+// =========================
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"; 
-
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// GLOBAL DATA
+// GLOBAL
 let gudangData = [];
 let selectedSlot = "";
 
-// ==============================
 // NORMALIZE PLACE
-// ==============================
-const normalize = p => {
-    if (!p) return "";
-    return p.toString().replace(/[\s\r\n\t]/g,"").toUpperCase();
-};
+const normalize = p => (!p ? "" : p.toString().replace(/[\s\r\n\t]/g,"").toUpperCase());
 
-// ==============================
-// LOAD DATA — NO LIMIT 100% FULL
-// ==============================
+// =========================
+// LOAD ALL DATA (UNLIMITED)
+// =========================
 async function loadData() {
     document.getElementById("status").textContent = "Fetching data…";
 
-    // ⛔ NO LIMIT ⛔ — ambil semua data 100%
+    // FIX — FULL DATA (NO MORE 1000 LIMIT)
     const { data, error } = await db
         .from("gudang_penyimpanan")
-        .select("*");   // ← TANPA LIMIT
+        .select("*")
+        .range(0, 50000);   // ← WAJIB AGAR DATA >1000 MUNCUL
 
-    if (error) return alert("Supabase Error: " + error.message);
+    if (error) {
+        alert("Supabase Error: " + error.message);
+        return;
+    }
 
     gudangData = data || [];
 
-    console.table(gudangData);
+    document.getElementById("status").textContent =
+        `✔ ${gudangData.length} items loaded`;
 
     let select = document.getElementById("selectRack");
     select.innerHTML = `<option value="">— Pilih Rak —</option>`;
-    for (let c = 65; c <= 74; c++) {  // A–J
-        select.innerHTML += `<option value="${String.fromCharCode(c)}">${String.fromCharCode(c)}</option>`;
+
+    for (let c = 65; c <= 74; c++) { // A–J
+        const r = String.fromCharCode(c);
+        select.innerHTML += `<option value="${r}">${r}</option>`;
     }
 
-    document.getElementById("status").textContent = `✔ ${gudangData.length} items loaded`;
     renderGrid();
 }
 
-// ==============================
-// RENDER GRID PER RAK
-// ==============================
+// =========================
+// RENDER GRID
+// =========================
 function renderGrid() {
     const rack = document.getElementById("selectRack").value;
     const container = document.getElementById("rack-container");
@@ -151,16 +154,12 @@ function renderGrid() {
 
     for (let i = 1; i <= 30; i++) {
         let id = rack + String(i).padStart(2, "0");
-
         let items = gudangData.filter(d => normalize(d.place) === id);
-        let className = items.length ? "cell filled" : "cell";
-
-        let label = items.length ? (items[0].customer || "ITEM") : "";
 
         html += `
-            <div class="${className}" onclick="openDetail('${id}')">
+            <div class="${items.length ? "cell filled" : "cell"}" onclick="openDetail('${id}')">
                 <span>${id}</span>
-                <span>${label}</span>
+                <span>${items.length ? (items[0].customer || "ITEM") : ""}</span>
             </div>
         `;
     }
@@ -169,21 +168,19 @@ function renderGrid() {
     container.innerHTML = html;
 }
 
-// ==============================
-// MODAL DETAIL
-// ==============================
+// =========================
+// OPEN DETAIL MODAL
+// =========================
 function openDetail(id) {
     selectedSlot = id;
-    const modal = document.getElementById("detailModal");
-    const body = document.getElementById("detailBody");
-    const detailTotal = document.getElementById("detailTotal");
 
     let items = gudangData.filter(d => normalize(d.place) === id);
     let uniqueBoxes = new Set(items.map(i => i.barcode)).size;
 
     document.getElementById("detailTitle").textContent = `RAK ${id}`;
-    detailTotal.textContent = `Total: ${uniqueBoxes} 箱`;
+    document.getElementById("detailTotal").textContent = `Total: ${uniqueBoxes} 箱`;
 
+    let body = document.getElementById("detailBody");
     body.innerHTML = items.length
         ? items.map(item => `
             <tr>
@@ -200,33 +197,37 @@ function openDetail(id) {
         `).join("")
         : `<tr><td colspan="6">No items</td></tr>`;
 
-    modal.style.display = "block";
+    document.getElementById("detailModal").style.display = "block";
 }
 
-// ==============================
+// =========================
 // DELETE ITEM
-// ==============================
+// =========================
 async function deleteItem(id) {
     if (!confirm("Delete this item?")) return;
+
     await db.from("gudang_penyimpanan").delete().eq("id", id);
+
     closeModal();
     loadData();
 }
 
-// ==============================
+// =========================
 // MOVE ITEM
-// ==============================
+// =========================
 async function moveItem(id) {
     let newSlot = prompt("Enter new slot (A01, J15, etc):", selectedSlot);
     if (!newSlot) return;
 
     newSlot = normalize(newSlot);
+
     await db.from("gudang_penyimpanan").update({ place: newSlot }).eq("id", id);
 
     closeModal();
     loadData();
 }
 
+// CLOSE MODAL
 function closeModal() {
     document.getElementById("detailModal").style.display = "none";
 }
@@ -237,6 +238,7 @@ window.onclick = e => {
     if (e.target === document.getElementById("detailModal")) closeModal();
 };
 
+// FIRST LOAD
 loadData();
 
 </script>
