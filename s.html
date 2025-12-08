@@ -97,12 +97,27 @@ let selectedSlot = "";
 const normalize = p => (!p ? "" : p.toString().replace(/[\s\r\n\t]/g,"").toUpperCase());
 
 // =========================
+// RACK CONFIGURATION (slot berbeda-beda)
+// =========================
+const rackConfig = {
+    A: 31,   // A01–A31
+    B: 27,    // B01–B27
+    C: 29,   // C01–C29
+    D: 14,    // D01–D14, contoh tambahan
+    E: 15,   // E01–E15
+    F: 8,   // F01–F08
+    G: 2,   // G01–G02
+    H: 30,   // H01–H30
+    I: 30,   // I01–I30
+    J: 12,   // J01–J12
+};
+
+// =========================
 // LOAD ALL DATA (UNLIMITED)
 // =========================
 async function loadData() {
     document.getElementById("status").textContent = "Fetching data…";
 
-    // FIX — FULL DATA (NO MORE 1000 LIMIT)
     const { data, error } = await db
         .from("gudang_penyimpanan")
         .select("*")
@@ -121,9 +136,8 @@ async function loadData() {
     let select = document.getElementById("selectRack");
     select.innerHTML = `<option value="">— Pilih Rak —</option>`;
 
-    for (let c = 65; c <= 74; c++) { // A–J
-        const r = String.fromCharCode(c);
-        select.innerHTML += `<option value="${r}">${r}</option>`;
+    for (let rack in rackConfig) {
+        select.innerHTML += `<option value="${rack}">${rack}</option>`;
     }
 
     renderGrid();
@@ -152,7 +166,9 @@ function renderGrid() {
         <div class="grid">
     `;
 
-    for (let i = 1; i <= 30; i++) {
+    const totalSlots = rackConfig[rack] || 0;
+
+    for (let i = 1; i <= totalSlots; i++) {
         let id = rack + String(i).padStart(2, "0");
         let items = gudangData.filter(d => normalize(d.place) === id);
 
