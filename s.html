@@ -61,7 +61,7 @@ th { background:#e4e4e4; }
         <span class="modal-close" id="closeDetail">&times;</span>
         <div style="display:flex; justify-content:space-between; align-items:center;">
             <h2 id="detailTitle">Slot Details</h2>
-            <div id="detailTotal" style="font-weight:bold; color:##000;"></div>
+            <div id="detailTotal" style="font-weight:bold; color:#000;"></div>
         </div>
 
         <table>
@@ -100,24 +100,26 @@ const normalize = p => {
 };
 
 // ==============================
-// LOAD DATA
+// LOAD DATA — NO LIMIT 100% FULL
 // ==============================
 async function loadData() {
     document.getElementById("status").textContent = "Fetching data…";
 
-    let { data, error } = await db.from("gudang_penyimpanan").select("*");
+    // ⛔ NO LIMIT ⛔ — ambil semua data 100%
+    const { data, error } = await db
+        .from("gudang_penyimpanan")
+        .select("*");   // ← TANPA LIMIT
+
     if (error) return alert("Supabase Error: " + error.message);
 
     gudangData = data || [];
 
-    // DEBUG: tampilkan data lengkap dalam bentuk tabel di console
-    console.table(gudangData, ["id","place","box_number","barcode","customer","company_number","packaging_quantity","customer_order_number"]);
+    console.table(gudangData);
 
     let select = document.getElementById("selectRack");
     select.innerHTML = `<option value="">— Pilih Rak —</option>`;
-    for (let c = 65; c <= 74; c++) {  // A-J
-        let rackID = String.fromCharCode(c);
-        select.innerHTML += `<option value="${rackID}">${rackID}</option>`;
+    for (let c = 65; c <= 74; c++) {  // A–J
+        select.innerHTML += `<option value="${String.fromCharCode(c)}">${String.fromCharCode(c)}</option>`;
     }
 
     document.getElementById("status").textContent = `✔ ${gudangData.length} items loaded`;
@@ -136,27 +138,24 @@ function renderGrid() {
         return;
     }
 
-    // Filter semua item di rak ini
     let itemsInRack = gudangData.filter(d => normalize(d.place).startsWith(rack));
     let uniqueBoxes = new Set(itemsInRack.map(i => i.barcode)).size;
 
-    // Header + total di sebelah kanan
-    let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h2>Rak ${rack}</h2>
-                    <div style="font-weight:bold; color:##000;">Total: ${uniqueBoxes} 箱</div>
-                </div>`;
-    html += `<div class="grid">`;
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <h2>Rak ${rack}</h2>
+            <div style="font-weight:bold; color:#fff;">Total: ${uniqueBoxes} 箱</div>
+        </div>
+        <div class="grid">
+    `;
 
-    let totalSlot = 30; // setiap rak 30 slot (A01–A30)
-    for (let i = 1; i <= totalSlot; i++) {
+    for (let i = 1; i <= 30; i++) {
         let id = rack + String(i).padStart(2, "0");
 
         let items = gudangData.filter(d => normalize(d.place) === id);
+        let className = items.length ? "cell filled" : "cell";
 
-        let className = "cell";
-        if (items.length > 0) className += " filled";
-
-        let label = items.length ? items[0].customer || "ITEM" : "";
+        let label = items.length ? (items[0].customer || "ITEM") : "";
 
         html += `
             <div class="${className}" onclick="openDetail('${id}')">
@@ -180,8 +179,6 @@ function openDetail(id) {
     const detailTotal = document.getElementById("detailTotal");
 
     let items = gudangData.filter(d => normalize(d.place) === id);
-
-    // Hitung total unique barcode
     let uniqueBoxes = new Set(items.map(i => i.barcode)).size;
 
     document.getElementById("detailTitle").textContent = `RAK ${id}`;
@@ -222,8 +219,8 @@ async function deleteItem(id) {
 async function moveItem(id) {
     let newSlot = prompt("Enter new slot (A01, J15, etc):", selectedSlot);
     if (!newSlot) return;
-    newSlot = normalize(newSlot);
 
+    newSlot = normalize(newSlot);
     await db.from("gudang_penyimpanan").update({ place: newSlot }).eq("id", id);
 
     closeModal();
