@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>出貨課1.04 - 搜尋訂單資料</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     * { box-sizing: border-box; }
     body {
@@ -13,6 +14,7 @@
       font-size: 13px;
     }
     .container { display: flex; height: 100vh; overflow: hidden; }
+
     .sidebar {
       width: 180px; background-color: #e0e0e0;
       padding: 8px; border-right: 1px solid #ccc;
@@ -23,6 +25,7 @@
       margin: 4px 0; padding: 6px;
       font-size: 12px; cursor: pointer;
     }
+
     .main {
       flex: 1; display: flex; flex-direction: column;
       overflow: hidden;
@@ -31,18 +34,24 @@
     h3 {
       margin: 0; padding: 10px;
       background: #3f51b5; color: white;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between;
+      align-items: center;
       position: sticky; top: 0; z-index: 100;
     }
 
     .search-bar {
       background: #f0f0f0;
       padding: 8px;
-      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+      display: flex; flex-wrap: wrap;
+      align-items: center; gap: 4px;
       border-bottom: 1px solid #ccc;
       position: sticky; top: 45px; z-index: 99;
     }
-    .search-bar input { padding: 4px; width: 100px; font-size: 12px; }
+
+    .search-bar input {
+      padding: 4px; width: 100px; font-size: 12px;
+    }
+
     button { cursor: pointer; font-size: 12px; padding: 4px 8px; }
 
     .table-container { flex: 1; overflow: auto; }
@@ -57,8 +66,10 @@
     tr:nth-child(odd) { background-color: #f9f9f9; }
   </style>
 </head>
+
 <body>
   <div class="container">
+
     <div class="sidebar">
       <button onclick="window.location.href='data.html'">出貨課條碼查詢</button>
       <button onclick="window.location.href='penyimpanan.html'">出貨部包裝</button>
@@ -106,12 +117,15 @@
           </tbody>
         </table>
       </div>
+
     </div>
   </div>
 
   <script>
     const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function loadData() {
@@ -124,16 +138,25 @@
       const company = document.getElementById("searchCompany").value.trim();
       const place = document.getElementById("searchPlace").value.trim();
 
-      let query = supabaseClient.from("gudang_penyimpanan").select("*").order("saved_at", { ascending: false });
+      // ===========================
+      //   QUERY TANPA LIMIT !!!
+      // ===========================
+      let query = supabaseClient
+        .from("gudang_penyimpanan")
+        .select("*", { count: "exact" })
+        .order("saved_at", { ascending: false });
+
       if (c) query = query.ilike("customer", `%${c}%`);
       if (o) query = query.ilike("customer_order_number", `%${o}%`);
       if (d) query = query.ilike("delivery_order_number", `%${d}%`);
       if (company) query = query.ilike("company_number", `%${company}%`);
       if (place) query = query.ilike("place", `%${place}%`);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
+
       if (error) {
-        tbody.innerHTML = `<tr><td colspan='13' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
+        tbody.innerHTML =
+          `<tr><td colspan='13' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
         return;
       }
 
@@ -143,8 +166,9 @@
         return;
       }
 
-      document.getElementById("countInfo").textContent = `📦 共有 ${data.length} 筆`;
+      document.getElementById("countInfo").textContent = `📦 共 ${count} 筆資料`;
       tbody.innerHTML = "";
+
       data.forEach(row => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
@@ -166,13 +190,15 @@
       });
     }
 
-    // Tekan Enter untuk mencari langsung
-    ["searchCustomer","searchOrder","searchDelivery","searchCompany","searchPlace"].forEach(id => {
-      const input = document.getElementById(id);
-      input.addEventListener("keypress", e => { if (e.key === "Enter") loadData(); });
+    // Tekan Enter langsung search
+    ["searchCustomer", "searchOrder", "searchDelivery", "searchCompany", "searchPlace"].forEach(id => {
+      document.getElementById(id).addEventListener("keypress", e => {
+        if (e.key === "Enter") loadData();
+      });
     });
 
     document.addEventListener("DOMContentLoaded", loadData);
   </script>
+
 </body>
 </html>
