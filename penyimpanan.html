@@ -83,28 +83,37 @@ th {
 }
 .notification {
   position: fixed;
-  top: 65%;
+  top: 58%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: #f44336;
   color: white;
-  border-radius: 12px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  padding: 20px 30px;
+
+  border-radius: 20px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+
+  padding: 35px 55px;
   z-index: 9999;
   display: none;
-  font-size: 18px;
+
+  font-size: 30px;        /* lebih besar */
+  font-weight: bold;
   text-align: center;
-  animation: fadeIn 0.3s ease;
+  letter-spacing: 1px;
+
+  animation: fadeIn 0.25s ease-out;
 }
+
 .notification.show { display: block; }
 .notification.error { background: #e63946; }
 .notification.warning { background: #ff9800; }
 .notification.success { background: #4caf50; }
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translate(-50%, -60%); }
-  to { opacity: 1; transform: translate(-50%, -50%); }
+  0% { opacity: 0; transform: translate(-50%, -60%); }
+  100% { opacity: 1; transform: translate(-50%, -50%); }
 }
+
 @media print {
   body * { visibility: hidden; }
   #printArea, #printArea * { visibility: visible; }
