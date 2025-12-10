@@ -31,7 +31,9 @@
       overflow: hidden;
     }
 
-    /* HEADER */
+    /* =====================================================
+       HEADER
+    ===================================================== */
     h3 {
       margin: 0; padding: 10px;
       background: #3f51b5;  /* biru */
@@ -71,11 +73,27 @@
     .table-container { flex: 1; overflow: auto; }
 
     table { width: 100%; border-collapse: collapse; font-size: 10px; }
-    th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
+
+    th, td {
+      border: 1px solid #ccc; padding: 4px 6px; text-align: center;
+    }
+
     th {
       background-color: #e0e0e0;
       position: sticky; top: 0px; z-index: 5;
+      transition: background 0.25s ease, color 0.25s ease;
     }
+
+    /* =====================================================
+       ⬇️  TAMBAHAN BARU — HEADER TABEL GANTI WARNA SAAT HOVER
+    ===================================================== */
+    th:hover {
+      background: #ff9800 !important;   /* ORANYE */
+      color: black !important;
+      cursor: pointer;
+    }
+    /* ===================================================== */
+
     tr:nth-child(even) { background-color: #fff; }
     tr:nth-child(odd) { background-color: #f9f9f9; }
   </style>
@@ -246,14 +264,12 @@
       });
     }
 
-    // Enter untuk search
     ["searchCustomer", "searchOrder", "searchDelivery", "searchCompany", "searchPlace"].forEach(id => {
       document.getElementById(id).addEventListener("keypress", e => {
         if (e.key === "Enter") loadData();
       });
     });
 
-    // Scroll window (tidak terlalu berguna, tapi tetap saya biarkan)
     window.addEventListener("scroll", function () {
       const header = document.querySelector("h3");
       if (window.scrollY > 10) {
@@ -263,7 +279,6 @@
       }
     });
 
-    // PERBAIKAN UTAMA — scroll di table-container
     document.querySelector(".table-container").addEventListener("scroll", function () {
       const header = document.querySelector("h3");
 
