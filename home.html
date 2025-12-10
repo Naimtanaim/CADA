@@ -31,9 +31,7 @@
       overflow: hidden;
     }
 
-    /* ===========================
-       HEADER (TELAH DIPERBARUI)
-       =========================== */
+    /* HEADER */
     h3 {
       margin: 0; padding: 10px;
       background: #3f51b5;  /* biru */
@@ -44,9 +42,8 @@
       transition: 0.25s ease;
     }
 
-    /* Hover → Merah */
     h3:hover {
-      background: #d32f2f !important;
+      background: #d32f2f !important; /* merah */
       cursor: pointer;
     }
 
@@ -214,7 +211,8 @@
       const { data, error, count } = await query;
 
       if (error) {
-        tbody.innerHTML = `<tr><td colspan='13' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
+        tbody.innerHTML =
+          `<tr><td colspan='13' style="color:red;">❌ 載入錯誤: ${error.message}</td></tr>`;
         return;
       }
 
@@ -248,19 +246,28 @@
       });
     }
 
-    // Enter → langsung search
+    // Enter untuk search
     ["searchCustomer", "searchOrder", "searchDelivery", "searchCompany", "searchPlace"].forEach(id => {
       document.getElementById(id).addEventListener("keypress", e => {
         if (e.key === "Enter") loadData();
       });
     });
 
-    // ================================
-    // Header berubah warna saat scroll
-    // ================================
+    // Scroll window (tidak terlalu berguna, tapi tetap saya biarkan)
     window.addEventListener("scroll", function () {
       const header = document.querySelector("h3");
       if (window.scrollY > 10) {
+        header.classList.add("scrolled");
+      } else {
+        header.classList.remove("scrolled");
+      }
+    });
+
+    // PERBAIKAN UTAMA — scroll di table-container
+    document.querySelector(".table-container").addEventListener("scroll", function () {
+      const header = document.querySelector("h3");
+
+      if (this.scrollTop > 10) {
         header.classList.add("scrolled");
       } else {
         header.classList.remove("scrolled");
