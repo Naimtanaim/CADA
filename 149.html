@@ -196,7 +196,7 @@ window.setWeight = async function () {
   palletWeight += addWeight; // total pallet weight global
 
   document.getElementById("result").innerText =
-    "当前桟板重量: " + palletWeight + " kg (ditambahkan)";
+    "当前桟板重量: " + palletWeight + " kg ()";
 
   const { data: rows, error } = await supabase
     .from("plt_table_duplicate")
@@ -207,16 +207,16 @@ window.setWeight = async function () {
     return;
   }
 
-  // Tambahkan berat ke tiap baris
-  for (const row of rows) {
-    const oldWeight = parseFloat(row.重量) || 0;
-    const newWeight = parseFloat((oldWeight + addWeight).toFixed(2));
+for (const row of rows) {
+  const oldWeight = parseFloat(row.重量) || 0;
+  const newWeight = oldWeight + addWeight;  // Tambahkan berat per baris
 
-    await supabase
-      .from("plt_table_duplicate")
-      .update({ 重量: newWeight })
-      .eq("NO", row.NO);
-  }
+  await supabase
+    .from("plt_table_duplicate")
+    .update({ 重量: newWeight })
+    .eq("NO", row.NO);
+}
+
 
   input.value = "";
   loadData();
@@ -271,14 +271,19 @@ function calculateTotals() {
     totalWeight += parseFloat(row.cells[6].innerText) || 0;
   });
 
-  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
+  // Total CBM dan Box tetap pakai fixed atau integer
+  document.getElementById("totalCbm").innerText = totalCbm.toFixed(2).replace(/\.?0+$/, "");
   document.getElementById("totalBox").innerText = totalBox;
-  document.getElementById("totalWeight").innerText =
-    totalWeight.toFixed(2);
 
-  weightWarning.style.display =
-    totalWeight > 4000 ? "block" : "none";
+  // Total Weight: hilangkan nol berlebihan
+  document.getElementById("totalWeight").innerText = totalWeight
+    .toFixed(2)       // 1234.00
+    .replace(/\.?0+$/, ""); // jadi 1234 atau 1234.5
+
+  // Tampilkan warning kalau > 4000 kg
+  weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
 }
+
 
 // ===============================
 // DELETE PER BARIS
