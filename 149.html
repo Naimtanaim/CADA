@@ -208,13 +208,13 @@ window.setWeight = async function() {
       .single();
 
     const oldWeight = parseFloat(oldData?.重量) || 0;
-    const newWeight = oldWeight + palletWeight;
+const newWeight = parseFloat((oldWeight + palletWeight).toFixed(2));
 
-    await supabase
-      .from('plt_table_duplicate')
-      .update({ 重量: newWeight })
-      .eq('NO', row.NO);
-  }
+await supabase
+  .from('plt_table_duplicate')
+  .update({ 重量: newWeight })
+  .eq('NO', row.NO);
+
 
   alert("✔ Berat pallet berhasil DITAMBAHKAN ke semua baris!");
   input.value = "";
@@ -268,10 +268,11 @@ function calculateTotals() {
 
   document.getElementById("totalCbm").innerText = totalCbm.toFixed(2);
   document.getElementById("totalBox").innerText = totalBox;
-  document.getElementById("totalWeight").innerText = totalWeight;
+  document.getElementById("totalWeight").innerText = totalWeight.toFixed(2);
 
   weightWarning.style.display = totalWeight > 4000 ? "block" : "none";
 }
+
 
 // ===============================
 // Tombol Delete Per Baris (kembalikan ke awal)
