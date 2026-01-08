@@ -180,6 +180,9 @@ let initialData = [];
 // ===============================
 // SET WEIGHT (FIX & RAPI)
 // ===============================
+// ===============================
+// SET PALLET WEIGHT TAMBAH PER BARIS
+// ===============================
 window.setWeight = async function () {
   const input = document.getElementById("palletWeight");
   const val = input.value;
@@ -189,30 +192,25 @@ window.setWeight = async function () {
     return;
   }
 
-  palletWeight = parseFloat(val);
+  const addWeight = parseFloat(val);
+  palletWeight += addWeight; // total pallet weight global
+
   document.getElementById("result").innerText =
-    "当前桟板重量: " + palletWeight + " kg";
+    "当前桟板重量: " + palletWeight + " kg (ditambahkan)";
 
   const { data: rows, error } = await supabase
     .from("plt_table_duplicate")
-    .select("NO");
+    .select("NO, 重量");
 
   if (error) {
     alert("Gagal mengambil data: " + error.message);
     return;
   }
 
+  // Tambahkan berat ke tiap baris
   for (const row of rows) {
-    const { data: oldData } = await supabase
-      .from("plt_table_duplicate")
-      .select("重量")
-      .eq("NO", row.NO)
-      .single();
-
-    const oldWeight = parseFloat(oldData?.重量) || 0;
-    const newWeight = parseFloat(
-      (oldWeight + palletWeight).toFixed(2)
-    );
+    const oldWeight = parseFloat(row.重量) || 0;
+    const newWeight = parseFloat((oldWeight + addWeight).toFixed(2));
 
     await supabase
       .from("plt_table_duplicate")
@@ -220,10 +218,11 @@ window.setWeight = async function () {
       .eq("NO", row.NO);
   }
 
-  alert("✔ Berat pallet berhasil DITAMBAHKAN ke semua baris!");
   input.value = "";
   loadData();
+  alert("✔ Berat pallet berhasil DITAMBAHKAN ke semua baris!");
 };
+
 
 // ===============================
 // LOAD DATA
