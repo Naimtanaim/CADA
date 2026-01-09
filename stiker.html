@@ -22,11 +22,16 @@ input {
   background: #fff;
   padding: 20px;
   margin-top: 20px;
+  border: 1px solid #000;
 }
 
 @media print {
-  body * { display: none; }
-  .label { display: block; }
+  body * {
+    display: none;
+  }
+  .label {
+    display: block;
+  }
 }
 </style>
 </head>
@@ -46,44 +51,54 @@ input {
 <script>
 const supabase = supabaseJs.createClient(
   "https://uusljhegkvahcjkaxqkz.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g"
-;
+  "PASTE_ANON_KEY_KAMU"
+);
 
 const barcodeInput = document.getElementById("barcode");
+let isPrinting = false; // 🔒 anti double print
 
-barcodeInput.addEventListener("keydown", async e => {
-  if (e.key === "Enter") {
-    const code = barcodeInput.value.trim();
-    if (!code) return;
+barcodeInput.addEventListener("keydown", async (e) => {
+  if (e.key !== "Enter") return;
 
-    const { data, error } = await supabase
-      .from("box_labels")
-      .select("*")
-      .eq("barcode", code)
-      .single();
+  const code = barcodeInput.value.trim();
+  if (!code || isPrinting) return;
 
-    if (error) {
-      alert("Data tidak ditemukan");
-      barcodeInput.value = "";
-      return;
-    }
+  const { data, error } = await supabase
+    .from("box_labels")
+    .select("*")
+    .eq("barcode", code)
+    .single();
 
-    document.getElementById("no").innerText = "NO: " + data.label_no;
-    document.getElementById("content").innerText =
+  if (error || !data) {
+    alert("Data tidak ditemukan");
+    barcodeInput.value = "";
+    return;
+  }
+
+  document.getElementById("no").innerText = "NO: " + data.label_no;
+  document.getElementById("content").innerText =
 `${data.part1}
 ${data.desc1}
 ${data.part2}
 ${data.desc2}`;
-    document.getElementById("weight").innerText =
+
+  document.getElementById("weight").innerText =
 `G.W ${data.gross_weight} | N.W ${data.net_weight}`;
 
-    // 🔥 LANGSUNG PRINT TANPA DIALOG
-    window.electronAPI.printLabel();
+  isPrinting = true;
 
-    barcodeInput.value = "";
-    barcodeInput.focus();
-  }
+  // 🖨️ AUTO PRINT (AMAN)
+  setTimeout(() => {
+    window.print();
+  }, 300);
+
+  barcodeInput.value = "";
 });
+
+window.onafterprint = () => {
+  isPrinting = false;
+  barcodeInput.focus();
+};
 </script>
 
 </body>
