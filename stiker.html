@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Box Label</title>
+<title>Box Label Auto Print</title>
 
 <style>
 body {
@@ -10,6 +10,7 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
+/* INPUT BARCODE */
 .search {
     text-align: center;
     margin-top: 20px;
@@ -22,6 +23,7 @@ body {
     text-align: center;
 }
 
+/* LABEL */
 .label {
     width: 500px;
     height: 320px;
@@ -31,6 +33,7 @@ body {
     border-radius: 6px;
     position: relative;
     margin: 20px auto;
+    display: none; /* SEMBUNYI DI LAYAR */
 }
 
 .no {
@@ -61,12 +64,14 @@ body {
     font-weight: bold;
 }
 
+/* ===== PRINT MODE ===== */
 @media print {
-    body * { visibility: hidden; }
-    .label, .label * {
-        visibility: visible;
+    body * {
+        display: none !important;
     }
+
     .label {
+        display: block !important;
         position: absolute;
         top: 0;
         left: 0;
@@ -79,19 +84,14 @@ body {
 
 <!-- INPUT BARCODE -->
 <div class="search">
-    <div style="font-size:18px; font-weight:bold; margin-bottom:8px;">
+    <div style="font-size:18px;font-weight:bold;margin-bottom:8px;">
         SCAN BARCODE
     </div>
-    <input
-        id="barcodeInput"
-        placeholder=""
-        autofocus
-    >
+    <input id="barcodeInput" autofocus>
 </div>
 
-
 <!-- LABEL -->
-<div class="label" id="label" style="display:none">
+<div class="label" id="label">
     <div class="no" id="labelNo">NO:</div>
     <div class="content" id="content"></div>
     <div class="weights" id="weights"></div>
@@ -101,10 +101,10 @@ body {
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 /* =============================
-   KONFIGURASI SUPABASE
+   SUPABASE CONFIG
 ============================= */
 const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
+const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY";
 
 const supabaseClient = supabase.createClient(
     SUPABASE_URL,
@@ -116,33 +116,33 @@ const supabaseClient = supabase.createClient(
 ============================= */
 const barcodeInput = document.getElementById("barcodeInput");
 
-barcodeInput.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){
+barcodeInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
         e.preventDefault();
         const code = barcodeInput.value.trim();
-        if(code) loadByBarcode(code);
+        if (code) loadByBarcode(code);
     }
 });
 
 /* =============================
-   LOAD DATA BERDASARKAN BARCODE
-   (label_no)
+   LOAD & AUTO PRINT
 ============================= */
-async function loadByBarcode(barcode){
+async function loadByBarcode(barcode) {
+
     const { data, error } = await supabaseClient
         .from("box_labels")
         .select("*")
         .eq("barcode", barcode)
         .single();
 
-    if(error){
+    if (error || !data) {
         alert("Label tidak ditemukan");
         barcodeInput.value = "";
+        barcodeInput.focus();
         return;
     }
 
-    document.getElementById("label").style.display = "block";
-
+    // ISI LABEL
     document.getElementById("labelNo").innerText =
         "NO: " + data.label_no;
 
@@ -159,12 +159,14 @@ N.W.: ${data.net_weight} Kgs`;
     document.getElementById("pageNo").innerText =
         data.page_no;
 
-    // AUTO PRINT
+    document.getElementById("label").style.display = "block";
+
+    // AUTO PRINT (TANPA REVIEW)
     setTimeout(() => {
         window.print();
         barcodeInput.value = "";
         barcodeInput.focus();
-    }, 500);
+    }, 100);
 }
 </script>
 
