@@ -1,173 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Box Label Auto Print</title>
+<title>Auto Print Label</title>
 
 <style>
 body {
-    background: #ccc;
-    font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial;
+  background: #eee;
 }
 
-/* INPUT BARCODE */
-.search {
-    text-align: center;
-    margin-top: 20px;
+input {
+  font-size: 22px;
+  padding: 10px;
+  width: 300px;
 }
 
-.search input {
-    font-size: 20px;
-    padding: 10px;
-    width: 300px;
-    text-align: center;
-}
-
-/* LABEL */
 .label {
-    width: 500px;
-    height: 320px;
-    background: #fff;
-    padding: 20px 25px;
-    box-sizing: border-box;
-    border-radius: 6px;
-    position: relative;
-    margin: 20px auto;
-    display: none; /* SEMBUNYI DI LAYAR */
+  width: 500px;
+  height: 320px;
+  background: #fff;
+  padding: 20px;
+  margin-top: 20px;
 }
 
-.no {
-    font-weight: bold;
-    font-size: 18px;
-    margin-bottom: 15px;
-}
-
-.content {
-    font-size: 14px;
-    line-height: 1.6;
-    white-space: pre-line;
-}
-
-.weights {
-    position: absolute;
-    bottom: 20px;
-    left: 25px;
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.page {
-    position: absolute;
-    bottom: 20px;
-    right: 95px;
-    font-size: 24px;
-    font-weight: bold;
-}
-
-/* ===== PRINT MODE ===== */
 @media print {
-    body * {
-        display: none !important;
-    }
-
-    .label {
-        display: block !important;
-        position: absolute;
-        top: 0;
-        left: 0;
-    }
+  body * { display: none; }
+  .label { display: block; }
 }
 </style>
 </head>
 
 <body>
 
-<!-- INPUT BARCODE -->
-<div class="search">
-    <div style="font-size:18px;font-weight:bold;margin-bottom:8px;">
-        SCAN BARCODE
-    </div>
-    <input id="barcodeInput" autofocus>
-</div>
+<h3>SCAN BARCODE</h3>
+<input id="barcode" autofocus>
 
-<!-- LABEL -->
 <div class="label" id="label">
-    <div class="no" id="labelNo">NO:</div>
-    <div class="content" id="content"></div>
-    <div class="weights" id="weights"></div>
-    <div class="page" id="pageNo"></div>
+  <div id="no"></div>
+  <pre id="content"></pre>
+  <div id="weight"></div>
 </div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-/* =============================
-   SUPABASE CONFIG
-============================= */
-const SUPABASE_URL = "https://uusljhegkvahcjkaxqkz.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV1c2xqaGVna3ZhaGNqa2F4cWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ0ODMzMTIsImV4cCI6MjA3MDA1OTMxMn0.eio4OSjH30XzfXn-9UxQRVwleGKi2dvdWo6Ggx8FW1g";
-
-const supabaseClient = supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
+const supabase = supabaseJs.createClient(
+  "https://uusljhegkvahcjkaxqkz.supabase.co",
+  "ISI_SUPABASE_KEY_MU"
 );
 
-/* =============================
-   SCAN BARCODE (ENTER)
-============================= */
-const barcodeInput = document.getElementById("barcodeInput");
+const barcodeInput = document.getElementById("barcode");
 
-barcodeInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        const code = barcodeInput.value.trim();
-        if (code) loadByBarcode(code);
-    }
-});
+barcodeInput.addEventListener("keydown", async e => {
+  if (e.key === "Enter") {
+    const code = barcodeInput.value.trim();
+    if (!code) return;
 
-/* =============================
-   LOAD & AUTO PRINT
-============================= */
-async function loadByBarcode(barcode) {
+    const { data, error } = await supabase
+      .from("box_labels")
+      .select("*")
+      .eq("barcode", code)
+      .single();
 
-    const { data, error } = await supabaseClient
-        .from("box_labels")
-        .select("*")
-        .eq("barcode", barcode)
-        .single();
-
-    if (error || !data) {
-        alert("Label tidak ditemukan");
-        barcodeInput.value = "";
-        barcodeInput.focus();
-        return;
+    if (error) {
+      alert("Data tidak ditemukan");
+      barcodeInput.value = "";
+      return;
     }
 
-    // ISI LABEL
-    document.getElementById("labelNo").innerText =
-        "NO: " + data.label_no;
-
+    document.getElementById("no").innerText = "NO: " + data.label_no;
     document.getElementById("content").innerText =
 `${data.part1}
 ${data.desc1}
 ${data.part2}
 ${data.desc2}`;
+    document.getElementById("weight").innerText =
+`G.W ${data.gross_weight} | N.W ${data.net_weight}`;
 
-    document.getElementById("weights").innerHTML =
-`G.W.: ${data.gross_weight} Kgs<br>
-N.W.: ${data.net_weight} Kgs`;
+    // 🔥 LANGSUNG PRINT TANPA DIALOG
+    window.electronAPI.printLabel();
 
-    document.getElementById("pageNo").innerText =
-        data.page_no;
-
-    document.getElementById("label").style.display = "block";
-
-    // AUTO PRINT (TANPA REVIEW)
-    setTimeout(() => {
-        window.print();
-        barcodeInput.value = "";
-        barcodeInput.focus();
-    }, 100);
-}
+    barcodeInput.value = "";
+    barcodeInput.focus();
+  }
+});
 </script>
 
 </body>
